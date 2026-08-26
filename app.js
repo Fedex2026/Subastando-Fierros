@@ -1,6 +1,7 @@
 const auctions=[
   {
     id:"aveo-2018",
+    category:"autos",
     name:"CHEVROLET AVEO",
     year:"2018 | LT",
     image:"https://res.cloudinary.com/vobmt656/image/upload/v1787728525/144720522-el-fondo-de-noticias-es-perfecto-para-cualquier-tipo-de-presentaci%C3%B3n-de-noticias-o-informaci%C3%B3n-el-fo.webp",
@@ -9,6 +10,7 @@ const auctions=[
   },
   {
     id:"jetta-2016",
+    category:"autos",
     name:"VOLKSWAGEN JETTA",
     year:"2016 | Trendline",
     image:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80",
@@ -17,6 +19,7 @@ const auctions=[
   },
   {
     id:"mazda-3-2017",
+    category:"autos",
     name:"MAZDA 3",
     year:"2017 | i Sport",
     image:"https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80",
@@ -25,6 +28,7 @@ const auctions=[
   },
   {
     id:"honda-civic-2015",
+    category:"autos",
     name:"HONDA CIVIC",
     year:"2015 | EX",
     image:"https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=900&q=80",
@@ -39,12 +43,47 @@ const currency=new Intl.NumberFormat("es-MX",{
   maximumFractionDigits:0
 });
 
-function renderAuctionList(){
+let activeCategory="todos";
+
+const categoryNames={
+  todos:"todas las categorías",
+  autos:"autos",
+  motos:"motos",
+  electronica:"electrónica",
+  herramientas:"herramientas y maquinaria",
+  relojes:"relojes y joyería",
+  lotes:"lotes y mercancía",
+  hogar:"hogar"
+};
+
+function renderAuctionList(category=activeCategory){
   const c=document.getElementById("auctionList");
   if(!c)return;
 
-  c.innerHTML=auctions.map(i=>`
-    <article class="auction-card" data-vehicle-id="${i.id}" tabindex="0" role="link" aria-label="Ver ${i.name}">
+  const filtered=category==="todos"
+    ? auctions
+    : auctions.filter(i=>i.category===category);
+
+  const label=document.getElementById("auctionCategoryLabel");
+  if(label){
+    label.textContent=category==="todos"
+      ? "Mostrando todas las subastas disponibles."
+      : `Mostrando subastas de ${categoryNames[category] || category}.`;
+  }
+
+  if(!filtered.length){
+    c.innerHTML=`
+      <div class="auction-empty-state">
+        <span>🔨</span>
+        <strong>AÚN NO HAY SUBASTAS EN ESTA CATEGORÍA</strong>
+        <p>Muy pronto aparecerán nuevas oportunidades de ${categoryNames[category] || "esta categoría"}.</p>
+      </div>
+    `;
+    return;
+  }
+
+  c.innerHTML=filtered.map(i=>`
+    <article class="auction-card" data-vehicle-id="${i.id}" data-category="${i.category}" tabindex="0" role="link" aria-label="Ver ${i.name}">
       <div class="auction-card-image">
         <span class="upcoming-badge">PRÓXIMAMENTE</span>
         <img src="${i.image}" alt="${i.name}">
@@ -81,6 +120,27 @@ function renderAuctionList(){
 }
 
 renderAuctionList();
+
+document.querySelectorAll(".category-card").forEach(button=>{
+  button.addEventListener("click",()=>{
+    activeCategory=button.dataset.category || "todos";
+
+    document.querySelectorAll(".category-card").forEach(item=>{
+      item.classList.toggle("active",item===button);
+    });
+
+    renderAuctionList(activeCategory);
+    document.getElementById("proximas")?.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+});
+
+document.getElementById("showAllAuctions")?.addEventListener("click",()=>{
+  activeCategory="todos";
+  document.querySelectorAll(".category-card").forEach(item=>{
+    item.classList.toggle("active",item.dataset.category==="todos");
+  });
+  renderAuctionList("todos");
+});
 
 const menuButton=document.getElementById("mobileMenuButton"),
 mobileMenu=document.getElementById("mobileMenu");
@@ -164,7 +224,7 @@ function renderBid(){
 document.getElementById("bidButton")?.addEventListener("click",()=>{
   const input=document.getElementById("bidInput"),
         message=document.getElementById("bidMessage"),
-        value=Number(String(input.value).replace(/[^\\d.]/g,""));
+        value=Number(String(input.value).replace(/[^\d.]/g,""));
 
   if(!Number.isFinite(value)){
     message.hidden=false;
