@@ -67,7 +67,7 @@ function renderAuctionList(){
   c.querySelectorAll(".auction-card").forEach(card=>{
     const openVehicle=()=>{
       const id=card.dataset.vehicleId;
-      window.location.href=`vehiculo.html?id=${encodeURIComponent(id)}`;
+      window.location.href=`/Subastando-Fierros/vehiculo.html?id=${encodeURIComponent(id)}`;
     };
 
     card.addEventListener("click",openVehicle);
@@ -164,7 +164,7 @@ function renderBid(){
 document.getElementById("bidButton")?.addEventListener("click",()=>{
   const input=document.getElementById("bidInput"),
         message=document.getElementById("bidMessage"),
-        value=Number(String(input.value).replace(/[^\d.]/g,""));
+        value=Number(String(input.value).replace(/[^\\d.]/g,""));
 
   if(!Number.isFinite(value)){
     message.hidden=false;
@@ -216,4 +216,3 @@ window.addEventListener("resize",()=>{
     mobileMenu.hidden=true;
   }
 });
-
