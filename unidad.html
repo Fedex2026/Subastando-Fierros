@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <meta name="theme-color" content="#090909">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <title>Detalle de unidad | Subastando Fierro</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="unidad.css">
+
+</head>
+
+<body>
+
+  <header class="site-header">
+
+    <div class="header-inner">
+
+      <a href="index.html" class="brand">
+
+        <span class="brand-icon">🔨</span>
+
+        <span>
+
+          <strong>SUBASTANDO <b>FIERRO</b></strong>
+
+          <small>SUBASTAS DE AUTOS</small>
+
+        </span>
+
+      </a>
+
+      <a href="index.html#subastas" class="back-button">← VOLVER A SUBASTAS</a>
+
+    </div>
+
+  </header>
+
+ 
+
+  <main class="page-shell">
+
+    <div id="loadingState" class="state-card">Cargando unidad...</div>
+
+    <div id="errorState" class="state-card error" hidden>No fue posible encontrar esta unidad.</div>
+
+ 
+
+    <div id="unitView" hidden>
+
+      <section class="unit-head">
+
+        <div>
+
+          <span id="unitStatus" class="status-pill">PRÓXIMAMENTE</span>
+
+          <h1 id="unitName">UNIDAD</h1>
+
+          <p id="unitSubtitle">Año | Versión</p>
+
+        </div>
+
+        <div class="lot-box">
+
+          <span>LOTE</span>
+
+          <strong id="unitLot">SF-00000</strong>
+
+        </div>
+
+      </section>
+
+ 
+
+      <section class="hero-grid">
+
+        <div class="gallery-card">
+
+          <div class="main-photo">
+
+            <img id="mainPhoto" src="" alt="Unidad en subasta">
+
+            <button id="prevPhoto" class="photo-arrow left">‹</button>
+
+            <button id="nextPhoto" class="photo-arrow right">›</button>
+
+          </div>
+
+          <div id="thumbs" class="thumbs"></div>
+
+        </div>
+
+ 
+
+        <aside class="auction-card">
+
+          <div class="auction-topline">
+
+            <span>PRÓXIMA SUBASTA</span>
+
+            <strong id="auctionDate">--</strong>
+
+          </div>
+
+ 
+
+          <div class="countdown-box">
+
+            <span>COMIENZA EN:</span>
+
+            <div class="countdown">
+
+              <div><strong id="days">00</strong><small>DÍAS</small></div>
+
+              <b>:</b>
+
+              <div><strong id="hours">00</strong><small>HORAS</small></div>
+
+              <b>:</b>
+
+              <div><strong id="minutes">00</strong><small>MIN</small></div>
+
+              <b>:</b>
+
+              <div><strong id="seconds">00</strong><small>SEG</small></div>
+
+            </div>
+
+          </div>
+
+ 
+
+          <div class="metric">
+
+            <span>PUJA INICIAL</span>
+
+            <strong id="startingBid">$0 MXN</strong>
+
+          </div>
+
+ 
+
+          <div class="metric">
+
+            <span>INCREMENTO MÍNIMO</span>
+
+            <strong id="minIncrement">$500 MXN</strong>
+
+          </div>
+
+ 
+
+          <button id="goAuctionButton" class="primary-button">🔨 IR A LA SUBASTA</button>
+
+          <p class="auction-note">El acceso a pujas se conectará con Login y Registro en la siguiente etapa.</p>
+
+        </aside>
+
+      </section>
+
+ 
+
+      <section class="details-grid">
+
+        <article class="panel">
+
+          <h2>🚗 INFORMACIÓN DEL VEHÍCULO</h2>
+
+          <dl class="spec-list">
+
+            <div><dt>Marca</dt><dd id="brandValue">—</dd></div>
+
+            <div><dt>Modelo</dt><dd id="modelValue">—</dd></div>
+
+            <div><dt>Año</dt><dd id="yearValue">—</dd></div>
+
+            <div><dt>Versión</dt><dd id="versionValue">—</dd></div>
+
+            <div><dt>Transmisión</dt><dd id="transmissionValue">—</dd></div>
+
+            <div><dt>Motor</dt><dd id="engineValue">—</dd></div>
+
+            <div><dt>Combustible</dt><dd id="fuelValue">—</dd></div>
+
+            <div><dt>Kilometraje</dt><dd id="mileageValue">—</dd></div>
+
+            <div><dt>Ubicación</dt><dd id="locationValue">—</dd></div>
+
+          </dl>
+
+        </article>
+
+ 
+
+        <article class="panel">
+
+          <h2>📋 CONDICIÓN Y DETALLES</h2>
+
+          <ul id="conditionList" class="check-list"></ul>
+
+        </article>
+
+ 
+
+        <article class="panel">
+
+          <h2>📄 DOCUMENTOS</h2>
+
+          <ul id="documentList" class="document-list"></ul>
+
+        </article>
+
+      </section>
+
+ 
+
+      <section class="panel description-panel">
+
+        <div>
+
+          <h2>📝 DESCRIPCIÓN DE LA UNIDAD</h2>
+
+          <p id="descriptionValue"></p>
+
+        </div>
+
+        <div class="extra-data">
+
+          <div><span>VIN</span><strong id="vinValue">—</strong></div>
+
+          <div><span>Condición de venta</span><strong id="saleConditionValue">—</strong></div>
+
+          <div><span>Precio de reserva</span><strong id="reserveValue">—</strong></div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+ 
+
+  <script src="unidad.js"></script>
+
+</body>
+
+</html>
