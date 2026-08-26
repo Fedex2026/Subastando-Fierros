@@ -19,7 +19,7 @@ const vehicles = {
     color: "Por confirmar",
     fuel: "Gasolina",
     startingBid: 38000,
-    auctionDate: "25 May 2026 · 11:00 AM",
+    auctionDate: "30 Ago 2026 · 11:00 AM",
     status: "PRÓXIMAMENTE",
     images: [
       "https://res.cloudinary.com/vobmt656/image/upload/v1787728525/144720522-el-fondo-de-noticias-es-perfecto-para-cualquier-tipo-de-presentaci%C3%B3n-de-noticias-o-informaci%C3%B3n-el-fo.webp"
@@ -52,7 +52,7 @@ const vehicles = {
     color: "Por confirmar",
     fuel: "Gasolina",
     startingBid: 52000,
-    auctionDate: "25 May 2026 · 02:00 PM",
+    auctionDate: "30 Ago 2026 · 02:00 PM",
     status: "PRÓXIMAMENTE",
     images: [],
     details: [
@@ -106,11 +106,13 @@ if (!vehicle) {
     .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`)
     .join("");
 
-  document.getElementById("vehicleDetails").innerHTML =
-    vehicle.details.map(item => `<li>${item}</li>`).join("");
+  document.getElementById("vehicleDetails").innerHTML = vehicle.details
+    .map(item => `<li>${item}</li>`)
+    .join("");
 
-  document.getElementById("vehicleDocuments").innerHTML =
-    vehicle.documents.map(item => `<li>${item}</li>`).join("");
+  document.getElementById("vehicleDocuments").innerHTML = vehicle.documents
+    .map(item => `<li>${item}</li>`)
+    .join("");
 
   const mainImage = document.getElementById("mainVehicleImage");
   const thumbs = document.getElementById("vehicleThumbs");
@@ -125,10 +127,9 @@ if (!vehicle) {
       </svg>`
     );
 
-  const images =
-    Array.isArray(vehicle.images) && vehicle.images.length
-      ? vehicle.images
-      : [fallback];
+  const images = Array.isArray(vehicle.images) && vehicle.images.length
+    ? vehicle.images
+    : [fallback];
 
   mainImage.src = images[0];
   mainImage.alt = `${vehicle.name} ${vehicle.year}`;
