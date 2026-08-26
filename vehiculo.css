@@ -1,0 +1,82 @@
+*{box-sizing:border-box}
+:root{--bg:#070707;--panel:#101113;--panel2:#151619;--line:#2a2c31;--text:#f5f5f5;--muted:#aeb2ba;--red:#e31b23;--yellow:#ffc400}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+a{text-decoration:none;color:inherit}
+button{font:inherit}
+.site-header{position:sticky;top:0;z-index:30;background:#090909;border-bottom:1px solid #222}
+.header-inner{max-width:1500px;margin:auto;min-height:76px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:900}
+.brand-icon{font-size:26px}
+.brand-name{font-size:20px;letter-spacing:.3px}
+.brand-name span{color:var(--red)}
+.brand-tagline{font-size:10px;color:#9b9b9b;letter-spacing:2px;margin-top:3px}
+.back-link{border:1px solid #3a3a3a;border-radius:10px;padding:11px 15px;font-weight:800;font-size:13px}
+.back-link:hover{border-color:var(--red);color:#fff}
+.page-shell{max-width:1500px;margin:auto;padding:30px 24px 50px}
+.vehicle-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(360px,.65fr);gap:24px;align-items:start}
+.gallery-column,.vehicle-summary,.detail-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.main-image-wrap{position:relative;background:#050505;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center}
+.main-image-wrap img{width:100%;height:100%;object-fit:contain;display:block}
+.status-badge{position:absolute;z-index:2;left:18px;top:18px;background:var(--yellow);color:#050505;padding:9px 13px;border-radius:7px;font-size:12px;font-weight:900}
+.thumb-strip{padding:13px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.thumb{border:2px solid transparent;border-radius:9px;background:#050505;padding:0;overflow:hidden;cursor:pointer;aspect-ratio:16/10}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.active{border-color:var(--red)}
+.vehicle-summary{padding:28px}
+.lot-label{font-size:12px;color:var(--muted);font-weight:800;letter-spacing:1px}
+.vehicle-summary h1{font-size:36px;line-height:1.05;margin:10px 0 7px}
+.version{color:#c4c6ca;margin:0 0 22px;font-size:16px}
+.summary-block{padding:18px 0;border-top:1px solid var(--line)}
+.summary-block span,.summary-grid span{display:block;color:#9da1a9;font-size:11px;font-weight:800;letter-spacing:.6px;margin-bottom:7px}
+.summary-block strong{font-size:24px}
+#startingBid{color:var(--yellow);font-size:31px}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);margin-bottom:22px}
+.summary-grid>div{padding:17px 10px 17px 0;border-bottom:1px solid var(--line)}
+.summary-grid strong{font-size:14px}
+.btn{border:0;border-radius:10px;padding:13px 18px;font-weight:900;cursor:pointer}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{filter:brightness(1.08)}
+.btn-large{width:100%;font-size:16px;padding:17px}
+.note{font-size:11px;color:#858991;text-align:center;line-height:1.5;margin:12px 0 0}
+.details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:22px}
+.detail-card{padding:23px}
+.detail-card h2{font-size:17px;margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.detail-card dl{margin:0}
+.detail-card dl div{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid #23252a}
+.detail-card dt{color:#aeb2ba}
+.detail-card dd{margin:0;text-align:right;font-weight:700}
+.check-list,.doc-list{list-style:none;padding:0;margin:0}
+.check-list li,.doc-list li{padding:11px 0;border-bottom:1px solid #23252a}
+.check-list li::before{content:"✓";color:#2ed47a;font-weight:900;margin-right:10px}
+.doc-list li::before{content:"📄";margin-right:10px}
+.detail-card p{color:#c8cbd1;line-height:1.7;margin:0}
+.site-footer{border-top:1px solid #222;padding:25px;display:flex;justify-content:center;gap:30px;color:#777;font-size:12px}
+.not-found{max-width:650px;margin:80px auto;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:45px}
+.not-found p{color:var(--muted);margin-bottom:25px}
+@media(max-width:950px){
+  .vehicle-hero{grid-template-columns:1fr}
+  .vehicle-summary h1{font-size:30px}
+}
+@media(max-width:650px){
+  .header-inner{min-height:66px;padding:0 14px}
+  .brand-name{font-size:16px}
+  .brand-tagline{font-size:8px}
+  .back-link{font-size:11px;padding:9px 10px}
+  .page-shell{padding:16px 12px 35px}
+  .gallery-column,.vehicle-summary,.detail-card{border-radius:12px}
+  .main-image-wrap{aspect-ratio:4/3}
+  .thumb-strip{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:9px}
+  .vehicle-summary{padding:20px}
+  .vehicle-summary h1{font-size:27px}
+  .summary-grid{grid-template-columns:1fr 1fr}
+  .details-grid{grid-template-columns:1fr;gap:12px;margin-top:12px}
+  .detail-card{padding:18px}
+  .site-footer{flex-direction:column;align-items:center;gap:5px}
+}
+@media(max-width:390px){
+  .back-link{font-size:0}
+  .back-link::after{content:"← VOLVER";font-size:11px}
+  .summary-grid{grid-template-columns:1fr}
+}
+
