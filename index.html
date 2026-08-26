@@ -34,7 +34,7 @@
 
     <a href="#inicio" class="brand"><div class="brand-icon">🔨</div><div><div class="brand-name">SUBASTANDO <span>FIERRO</span></div><div class="brand-tagline">SUBASTAS DE AUTOS</div></div></a>
 
-    <nav class="desktop-nav"><a class="active" href="#inicio">INICIO</a><a href="#subastas">SUBASTAS</a><a href="#en-vivo">EN VIVO</a><a href="#proximas">PRÓXIMAS</a><a href="#como-comprar">CÓMO COMPRAR</a><a href="#contacto">CONTACTO</a></nav>
+    <nav class="desktop-nav"><a class="active" href="#inicio">INICIO</a><a href="#subastas">SUBASTAS</a><a href="#en-vivo">EN VIVO</a><a href="#categorias">CATEGORÍAS</a><a href="#proximas">PRÓXIMAS</a><a href="#como-comprar">CÓMO COMPRAR</a><a href="#contacto">CONTACTO</a></nav>
 
     <div class="header-actions"><button class="btn btn-outline js-pending">👤 INICIAR SESIÓN</button><button class="btn btn-red js-pending">👥 REGISTRO</button></div>
 
@@ -42,7 +42,7 @@
 
   </div>
 
-  <div id="mobileMenu" class="mobile-menu" hidden><a href="#inicio">Inicio</a><a href="#subastas">Subastas</a><a href="#en-vivo">En vivo</a><a href="#proximas">Próximas</a><a href="#como-comprar">Cómo comprar</a><button class="btn btn-outline js-pending">Iniciar sesión</button><button class="btn btn-red js-pending">Registro</button></div>
+  <div id="mobileMenu" class="mobile-menu" hidden><a href="#inicio">Inicio</a><a href="#subastas">Subastas</a><a href="#en-vivo">En vivo</a><a href="#categorias">Categorías</a><a href="#proximas">Próximas</a><a href="#como-comprar">Cómo comprar</a><button class="btn btn-outline js-pending">Iniciar sesión</button><button class="btn btn-red js-pending">Registro</button></div>
 
 </header>
 
@@ -96,7 +96,27 @@
 
 </section>
 
-<section id="subastas" class="section"><div id="proximas" class="section-heading compact"><div><h2>📅 PRÓXIMAS SUBASTAS</h2></div><button class="link-button">VER TODAS →</button></div><div class="auction-list" id="auctionList"></div></section>
+<section id="categorias" class="section categories-section">
+  <div class="section-heading compact">
+    <div>
+      <h2>🔨 SUBASTANDO TODO</h2>
+      <p>Explora oportunidades por categoría. Los autos siguen siendo la categoría principal.</p>
+    </div>
+  </div>
+
+  <div class="category-grid" id="categoryFilters">
+    <button class="category-card active" type="button" data-category="todos"><span>🔥</span><strong>TODO</strong><small>Ver todas</small></button>
+    <button class="category-card" type="button" data-category="autos"><span>🚗</span><strong>AUTOS</strong><small>Autos y camionetas</small></button>
+    <button class="category-card" type="button" data-category="motos"><span>🏍️</span><strong>MOTOS</strong><small>Motos y scooters</small></button>
+    <button class="category-card" type="button" data-category="electronica"><span>📱</span><strong>ELECTRÓNICA</strong><small>Celulares y tecnología</small></button>
+    <button class="category-card" type="button" data-category="herramientas"><span>🛠️</span><strong>HERRAMIENTAS</strong><small>Equipo y maquinaria</small></button>
+    <button class="category-card" type="button" data-category="relojes"><span>⌚</span><strong>RELOJES</strong><small>Relojes y joyería</small></button>
+    <button class="category-card" type="button" data-category="lotes"><span>📦</span><strong>LOTES</strong><small>Mercancía y lotes</small></button>
+    <button class="category-card" type="button" data-category="hogar"><span>🏠</span><strong>HOGAR</strong><small>Casa y artículos</small></button>
+  </div>
+</section>
+
+<section id="subastas" class="section"><div id="proximas" class="section-heading compact"><div><h2>📅 PRÓXIMAS SUBASTAS</h2><p id="auctionCategoryLabel">Mostrando todas las subastas disponibles.</p></div><button class="link-button" id="showAllAuctions" type="button">VER TODAS →</button></div><div class="auction-list" id="auctionList"></div></section>
 
 <section id="contacto" class="footer-cta"><div><strong>SUBASTANDO <span>FIERRO</span></strong><p>La subasta de autos clara, rápida y en vivo.</p></div><button class="btn btn-red js-pending">CREAR CUENTA</button></section>
 
