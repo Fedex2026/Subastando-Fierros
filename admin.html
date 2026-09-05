@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+ 
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <meta name="theme-color" content="#090909" />
+
+ 
+
+  <title>Panel Admin | Subastando Fierros</title>
+
+ 
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+ 
+
+  <link rel="stylesheet" href="admin.css" />
+
+</head>
+
+ 
+
+<body>
+
+ 
+
+  <div id="adminLoading" class="admin-loading">
+
+    <div class="admin-loading-card">
+
+      <div class="admin-loading-icon">🔨</div>
+
+      <strong>VERIFICANDO ACCESO</strong>
+
+      <span>Espera un momento...</span>
+
+    </div>
+
+  </div>
+
+ 
+
+  <div id="adminApp" class="admin-layout" hidden>
+
+ 
+
+    <aside class="admin-sidebar">
+
+ 
+
+      <a href="index.html" class="admin-brand">
+
+        <div class="admin-brand-icon">🔨</div>
+
+        <div>
+
+          <strong>SUBASTANDO <span>FIERROS</span></strong>
+
+          <small>PANEL ADMINISTRATIVO</small>
+
+        </div>
+
+      </a>
+
+ 
+
+      <nav class="admin-nav">
+
+ 
+
+        <button class="admin-nav-item active" type="button" data-section="dashboard">
+
+          <span>📊</span>
+
+          <b>Inicio</b>
+
+        </button>
+
+ 
+
+        <button class="admin-nav-item" type="button" data-section="subastas">
+
+          <span>🔨</span>
+
+          <b>Subastas</b>
+
+        </button>
+
+ 
+
+        <button class="admin-nav-item" type="button" data-section="miembros">
+
+          <span>👥</span>
+
+          <b>Miembros</b>
+
+        </button>
+
+ 
+
+        <button class="admin-nav-item" type="button" data-section="ventas">
+
+          <span>💰</span>
+
+          <b>Ganadores / Ventas</b>
+
+        </button>
+
+ 
+
+        <button class="admin-nav-item" type="button" data-section="configuracion">
+
+          <span>⚙️</span>
+
+          <b>Configuración</b>
+
+        </button>
+
+ 
+
+      </nav>
+
+ 
+
+      <div class="admin-sidebar-bottom">
+
+ 
+
+        <div class="admin-user-box">
+
+          <div class="admin-user-avatar">A</div>
+
+          <div>
+
+            <strong id="adminUserName">Administrador</strong>
+
+            <small id="adminUserEmail">Cargando...</small>
+
+          </div>
+
+        </div>
+
+ 
+
+        <button id="logoutButton" class="admin-logout" type="button">
+
+          CERRAR SESIÓN
+
+        </button>
+
+ 
+
+      </div>
+
+ 
+
+    </aside>
+
+ 
+
+ 
+
+    <main class="admin-main">
+
+ 
+
+      <header class="admin-topbar">
+
+ 
+
+        <div>
+
+          <h1 id="adminPageTitle">Dashboard</h1>
+
+          <p id="adminPageSubtitle">Resumen general de Subastando Fierros.</p>
+
+        </div>
+
+ 
+
+        <div class="admin-topbar-actions">
+
+ 
+
+          <a href="index.html" class="admin-btn admin-btn-dark">
+
+            VER WEB
+
+          </a>
+
+ 
+
+          <button
+
+            id="newAuctionTopButton"
+
+            class="admin-btn admin-btn-red"
+
+            type="button"
+
+          >
+
+            + NUEVA SUBASTA
+
+          </button>
+
+ 
+
+        </div>
+
+ 
+
+      </header>
+
+ 
+
+ 
+
+      <section id="section-dashboard" class="admin-section active">
+
+ 
+
+        <div class="admin-stats-grid">
+
+ 
+
+          <article class="admin-stat-card">
+
+            <span>SUBASTAS EN VIVO</span>
+
+            <strong id="statLiveAuctions">0</strong>
+
+            <small>Subastas activas en este momento</small>
+
+          </article>
+
+ 
+
+          <article class="admin-stat-card">
+
+            <span>PRÓXIMAS SUBASTAS</span>
+
+            <strong id="statUpcomingAuctions">0</strong>
+
+            <small>Subastas programadas</small>
+
+          </article>
+
+ 
+
+          <article class="admin-stat-card">
+
+            <span>MIEMBROS ACTIVOS</span>
+
+            <strong id="statActiveMembers">0</strong>
+
+            <small>Con permiso para pujar</small>
+
+          </article>
+
+ 
+
+          <article class="admin-stat-card warning">
+
+            <span>PENDIENTES</span>
+
+            <strong id="statPendingMembers">0</strong>
+
+            <small>Membresías por revisar</small>
+
+          </article>
+
+ 
+
+        </div>
+
+ 
+
+ 
+
+        <div class="admin-dashboard-grid">
+
+ 
+
+          <article class="admin-panel">
+
+ 
+
+            <div class="admin-panel-heading">
+
+              <div>
+
+                <h2>Subastas recientes</h2>
+
+                <p>Actividad de las últimas subastas.</p>
+
+              </div>
+
+ 
+
+              <button
+
+                class="admin-link-button"
+
+                type="button"
+
+                data-go-section="subastas"
+
+              >
+
+                VER TODAS
+
+              </button>
+
+            </div>
+
+ 
+
+            <div id="dashboardAuctions" class="admin-empty-state">
+
+              <span>🔨</span>
+
+              <strong>Aún no hay datos para mostrar</strong>
+
+              <p>Las subastas aparecerán aquí cuando conectemos el módulo.</p>
+
+            </div>
+
+ 
+
+          </article>
+
+ 
+
+ 
+
+          <article class="admin-panel">
+
+ 
+
+            <div class="admin-panel-heading">
+
+              <div>
+
+                <h2>Miembros pendientes</h2>
+
+                <p>Usuarios esperando autorización.</p>
+
+              </div>
+
+ 
+
+              <button
+
+                class="admin-link-button"
+
+                type="button"
+
+                data-go-section="miembros"
+
+              >
+
+                REVISAR
+
+              </button>
+
+            </div>
+
+ 
+
+            <div id="dashboardPendingMembers" class="admin-empty-state">
+
+              <span>👥</span>
+
+              <strong>Sin miembros pendientes</strong>
+
+              <p>Los registros pendientes aparecerán aquí.</p>
+
+            </div>
+
+ 
+
+          </article>
+
+ 
+
+        </div>
+
+ 
+
+      </section>
+
+ 
+
+ 
+
+      <section id="section-subastas" class="admin-section">
+
+ 
+
+        <div class="admin-section-heading">
+
+ 
+
+          <div>
+
+            <h2>Subastas</h2>
+
+            <p>Crea, programa, edita y administra tus subastas.</p>
+
+          </div>
+
+ 
+
+          <button
+
+            id="newAuctionButton"
+
+            class="admin-btn admin-btn-red"
+
+            type="button"
+
+          >
+
+            + NUEVA SUBASTA
+
+          </button>
+
+ 
+
+        </div>
+
+ 
+
+        <div id="auctionsAdminList" class="admin-panel admin-empty-state">
+
+          <span>🔨</span>
+
+          <strong>Módulo de subastas listo para conectar</strong>
+
+          <p>
+
+            Aquí aparecerán las subastas con fecha, hora, precio,
+
+            incremento, fotos y estado.
+
+          </p>
+
+        </div>
+
+ 
+
+      </section>
+
+ 
+
+ 
+
+      <section id="section-miembros" class="admin-section">
+
+ 
+
+        <div class="admin-section-heading">
+
+ 
+
+          <div>
+
+            <h2>Miembros</h2>
+
+            <p>Autoriza, suspende o desactiva permisos para pujar.</p>
+
+          </div>
+
+ 
+
+          <div class="admin-search-wrap">
+
+            <input
+
+              id="memberSearch"
+
+              type="search"
+
+              placeholder="Buscar nombre, correo o teléfono..."
+
+            />
+
+          </div>
+
+ 
+
+        </div>
+
+ 
+
+        <div id="membersAdminList" class="admin-panel admin-empty-state">
+
+          <span>👥</span>
+
+          <strong>Módulo de miembros listo para conectar</strong>
+
+          <p>
+
+            Aquí podrás revisar membresías y autorizar el acceso a las pujas.
+
+          </p>
+
+        </div>
+
+ 
+
+      </section>
+
+ 
+
+ 
+
+      <section id="section-ventas" class="admin-section">
+
+ 
+
+        <div class="admin-section-heading">
+
+ 
+
+          <div>
+
+            <h2>Ganadores / Ventas</h2>
+
+            <p>Consulta ganadores, precios finales, pagos y entregas.</p>
+
+          </div>
+
+ 
+
+        </div>
+
+ 
+
+        <div id="salesAdminList" class="admin-panel admin-empty-state">
+
+          <span>💰</span>
+
+          <strong>Aún no hay ventas registradas</strong>
+
+          <p>Las subastas finalizadas aparecerán aquí.</p>
+
+        </div>
+
+ 
+
+      </section>
+
+ 
+
+ 
+
+      <section id="section-configuracion" class="admin-section">
+
+ 
+
+        <div class="admin-section-heading">
+
+ 
+
+          <div>
+
+            <h2>Configuración</h2>
+
+            <p>Parámetros generales de las subastas.</p>
+
+          </div>
+
+ 
+
+        </div>
+
+ 
+
+        <div class="admin-panel">
+
+ 
+
+          <div class="admin-form-grid">
+
+ 
+
+            <label>
+
+              <span>Duración predeterminada de ronda</span>
+
+              <div class="admin-input-with-suffix">
+
+                <input id="defaultRoundDuration" type="number" value="120" min="10" />
+
+                <b>segundos</b>
+
+              </div>
+
+            </label>
+
+ 
+
+            <label>
+
+              <span>Incremento mínimo predeterminado</span>
+
+              <div class="admin-input-with-suffix">
+
+                <input id="defaultIncrement" type="number" value="500" min="1" />
+
+                <b>MXN</b>
+
+              </div>
+
+            </label>
+
+ 
+
+          </div>
+
+ 
+
+          <button
+
+            id="saveSettingsButton"
+
+            class="admin-btn admin-btn-red"
+
+            type="button"
+
+          >
+
+            GUARDAR CONFIGURACIÓN
+
+          </button>
+
+ 
+
+          <div
+
+            id="settingsMessage"
+
+            class="admin-message"
+
+            hidden
+
+          ></div>
+
+ 
+
+        </div>
+
+ 
+
+      </section>
+
+ 
+
+    </main>
+
+ 
+
+  </div>
+
+ 
+
+ 
+
+  <div id="adminAccessDenied" class="admin-access-denied" hidden>
+
+ 
+
+    <div class="admin-access-card">
+
+      <div class="admin-access-icon">🔒</div>
+
+      <h1>ACCESO RESTRINGIDO</h1>
+
+      <p>
+
+        Esta sección es únicamente para administradores de Subastando Fierros.
+
+      </p>
+
+ 
+
+      <a href="index.html" class="admin-btn admin-btn-red">
+
+        VOLVER AL INICIO
+
+      </a>
+
+    </div>
+
+ 
+
+  </div>
+
+ 
+
+ 
+
+  <script type="module" src="admin.js"></script>
+
+ 
+
+</body>
+
+ 
+
+</html>
