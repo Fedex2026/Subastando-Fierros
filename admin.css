@@ -56,7 +56,7 @@ body{
 
  
 
-button,input{font:inherit}
+button,input,select,textarea{font:inherit}
 
  
 
@@ -950,7 +950,7 @@ a{
 
  
 
-/* CONFIG */
+/* CONFIG + FORM FIELDS */
 
 .admin-form-grid{
 
@@ -977,6 +977,74 @@ a{
   font-size:11px;
 
   font-weight:800;
+
+}
+
+ 
+
+.admin-form-grid input,
+
+.admin-form-grid select,
+
+.admin-form-grid textarea{
+
+  width:100%;
+
+  color:#fff;
+
+  background:#0c0d10;
+
+  border:1px solid var(--line);
+
+  border-radius:11px;
+
+  outline:none;
+
+}
+
+ 
+
+.admin-form-grid input,
+
+.admin-form-grid select{
+
+  height:46px;
+
+  padding:0 13px;
+
+}
+
+ 
+
+.admin-form-grid textarea{
+
+  min-height:120px;
+
+  padding:12px 13px;
+
+  resize:vertical;
+
+}
+
+ 
+
+.admin-form-grid input:focus,
+
+.admin-form-grid select:focus,
+
+.admin-form-grid textarea:focus{
+
+  border-color:#555861;
+
+}
+
+ 
+
+.admin-form-grid select option{
+
+  background:#111216;
+
+  color:#fff;
 
 }
 
@@ -1018,6 +1086,8 @@ a{
 
   border:0;
 
+  border-radius:0;
+
   outline:none;
 
 }
@@ -1036,6 +1106,14 @@ a{
 
  
 
+.admin-form-full{
+
+  grid-column:1 / -1;
+
+}
+
+ 
+
 .admin-message{
 
   margin-top:14px;
@@ -1049,6 +1127,390 @@ a{
   border:1px solid rgba(227,27,35,.3);
 
   font-size:11px;
+
+}
+
+ 
+
+ 
+
+/* =====================================================
+
+   MODAL NUEVA SUBASTA
+
+===================================================== */
+
+ 
+
+.admin-modal{
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:5000;
+
+  display:flex;
+
+  align-items:flex-start;
+
+  justify-content:center;
+
+  overflow:auto;
+
+  padding:34px 18px;
+
+}
+
+ 
+
+.admin-modal-backdrop{
+
+  position:fixed;
+
+  inset:0;
+
+  background:rgba(0,0,0,.78);
+
+  backdrop-filter:blur(4px);
+
+}
+
+ 
+
+.admin-modal-card{
+
+  position:relative;
+
+  z-index:1;
+
+  width:min(920px,100%);
+
+  max-height:calc(100vh - 68px);
+
+  overflow:auto;
+
+  background:#101115;
+
+  border:1px solid #30323a;
+
+  border-radius:22px;
+
+  box-shadow:0 30px 100px rgba(0,0,0,.55);
+
+}
+
+ 
+
+.admin-modal-header{
+
+  position:sticky;
+
+  top:0;
+
+  z-index:3;
+
+  display:flex;
+
+  align-items:flex-start;
+
+  justify-content:space-between;
+
+  gap:18px;
+
+  padding:22px 24px;
+
+  background:rgba(16,17,21,.97);
+
+  border-bottom:1px solid var(--line);
+
+  backdrop-filter:blur(10px);
+
+}
+
+ 
+
+.admin-modal-kicker{
+
+  display:block;
+
+  margin-bottom:5px;
+
+  color:var(--red);
+
+  font-size:9px;
+
+  font-weight:900;
+
+  letter-spacing:1.1px;
+
+}
+
+ 
+
+.admin-modal-header h2{
+
+  margin:0;
+
+  font-size:24px;
+
+}
+
+ 
+
+.admin-modal-header p{
+
+  margin:6px 0 0;
+
+  color:var(--muted);
+
+  font-size:11px;
+
+}
+
+ 
+
+.admin-modal-close{
+
+  width:40px;
+
+  height:40px;
+
+  display:grid;
+
+  place-items:center;
+
+  flex:0 0 auto;
+
+  color:#fff;
+
+  background:#17181d;
+
+  border:1px solid var(--line);
+
+  border-radius:11px;
+
+  cursor:pointer;
+
+}
+
+ 
+
+.admin-modal-close:hover{
+
+  background:#202127;
+
+}
+
+ 
+
+.admin-modal-body{
+
+  padding:24px;
+
+}
+
+ 
+
+.admin-form-section{
+
+  padding:20px;
+
+  margin-bottom:16px;
+
+  background:#131419;
+
+  border:1px solid var(--line);
+
+  border-radius:16px;
+
+}
+
+ 
+
+.admin-form-section:last-child{
+
+  margin-bottom:0;
+
+}
+
+ 
+
+.admin-form-section-title{
+
+  margin-bottom:18px;
+
+  padding-bottom:13px;
+
+  border-bottom:1px solid var(--line);
+
+}
+
+ 
+
+.admin-form-section-title strong{
+
+  display:block;
+
+  font-size:14px;
+
+}
+
+ 
+
+.admin-form-section-title small{
+
+  display:block;
+
+  margin-top:4px;
+
+  color:var(--muted);
+
+  font-size:10px;
+
+}
+
+ 
+
+.admin-upload-box{
+
+  min-height:150px;
+
+  padding:25px;
+
+  display:flex;
+
+  flex-direction:column;
+
+  align-items:center;
+
+  justify-content:center;
+
+  text-align:center;
+
+  cursor:pointer;
+
+  background:#0d0e12;
+
+  border:1px dashed #43454e;
+
+  border-radius:14px;
+
+  transition:.18s ease;
+
+}
+
+ 
+
+.admin-upload-box:hover{
+
+  border-color:#737680;
+
+  background:#101116;
+
+}
+
+ 
+
+.admin-upload-box input{
+
+  position:absolute;
+
+  width:1px;
+
+  height:1px;
+
+  opacity:0;
+
+  pointer-events:none;
+
+}
+
+ 
+
+.admin-upload-icon{
+
+  font-size:32px;
+
+  margin-bottom:9px;
+
+}
+
+ 
+
+.admin-upload-box strong{
+
+  font-size:11px;
+
+  letter-spacing:.5px;
+
+}
+
+ 
+
+.admin-upload-box small{
+
+  margin-top:5px;
+
+  color:var(--muted);
+
+  font-size:10px;
+
+}
+
+ 
+
+.admin-photo-preview{
+
+  display:grid;
+
+  grid-template-columns:repeat(4,minmax(0,1fr));
+
+  gap:10px;
+
+  margin-top:12px;
+
+}
+
+ 
+
+.admin-photo-preview img{
+
+  width:100%;
+
+  aspect-ratio:4/3;
+
+  object-fit:cover;
+
+  border-radius:10px;
+
+  border:1px solid var(--line);
+
+}
+
+ 
+
+.admin-modal-footer{
+
+  position:sticky;
+
+  bottom:0;
+
+  z-index:3;
+
+  display:flex;
+
+  justify-content:flex-end;
+
+  gap:10px;
+
+  padding:17px 24px;
+
+  background:rgba(16,17,21,.97);
+
+  border-top:1px solid var(--line);
+
+  backdrop-filter:blur(10px);
 
 }
 
@@ -1204,6 +1666,46 @@ a{
 
   }
 
+ 
+
+  .admin-modal{
+
+    padding:12px;
+
+  }
+
+ 
+
+  .admin-modal-card{
+
+    max-height:calc(100vh - 24px);
+
+    border-radius:17px;
+
+  }
+
+ 
+
+  .admin-modal-header,
+
+  .admin-modal-body,
+
+  .admin-modal-footer{
+
+    padding-left:16px;
+
+    padding-right:16px;
+
+  }
+
+ 
+
+  .admin-photo-preview{
+
+    grid-template-columns:repeat(2,minmax(0,1fr));
+
+  }
+
 }
 
  
@@ -1254,6 +1756,14 @@ a{
 
  
 
+  .admin-form-full{
+
+    grid-column:auto;
+
+  }
+
+ 
+
   .admin-nav{
 
     grid-template-columns:repeat(5,110px);
@@ -1291,6 +1801,22 @@ a{
  
 
   .admin-topbar-actions .admin-btn{
+
+    width:100%;
+
+  }
+
+ 
+
+  .admin-modal-footer{
+
+    flex-direction:column-reverse;
+
+  }
+
+ 
+
+  .admin-modal-footer .admin-btn{
 
     width:100%;
 
