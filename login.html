@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta name="theme-color" content="#080808">
+
+  <title>Iniciar sesión | Subastando Fierros</title>
+
+  <link rel="stylesheet" href="login.css">
+</head>
+
+<body>
+
+  <main class="login-page">
+
+    <section class="login-hero">
+
+      <div class="hero-content">
+
+        <div class="brand">
+          <div class="brand-icon">SF</div>
+
+          <div>
+            <h1>SUBASTANDO FIERROS</h1>
+            <p>SUBASTAS DE AUTOS Y MOTOS EN VIVO</p>
+          </div>
+        </div>
+
+
+        <div class="hero-message">
+
+          <span class="hero-badge">
+            EN VIVO
+          </span>
+
+          <h2>
+            Entra, mira
+            <strong>y puja.</strong>
+          </h2>
+
+          <p>
+            Inicia sesión para acceder a tu cuenta,
+            seguir las subastas y participar cuando
+            tengas una membresía activa.
+          </p>
+
+        </div>
+
+
+        <div class="hero-features">
+
+          <div class="feature">
+            <span>✓</span>
+
+            <div>
+              <b>Acceso rápido</b>
+              <small>Entra desde tu celular durante el en vivo.</small>
+            </div>
+          </div>
+
+
+          <div class="feature">
+            <span>✓</span>
+
+            <div>
+              <b>Pujas en tiempo real</b>
+              <small>Ve cómo cambia la puja al instante.</small>
+            </div>
+          </div>
+
+
+          <div class="feature">
+            <span>✓</span>
+
+            <div>
+              <b>Tu membresía</b>
+              <small>El sistema reconocerá automáticamente si puedes pujar.</small>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <footer>
+        Subastando Fierros México
+      </footer>
+
+    </section>
+
+
+
+    <section class="login-panel">
+
+      <div class="login-card">
+
+        <div class="mobile-brand">
+
+          <div class="brand-icon">SF</div>
+
+          <div>
+            <h1>SUBASTANDO FIERROS</h1>
+            <p>SUBASTAS EN VIVO</p>
+          </div>
+
+        </div>
+
+
+        <header class="login-heading">
+
+          <span>BIENVENIDO</span>
+
+          <h2>Iniciar sesión</h2>
+
+          <p>
+            Ingresa con el correo y contraseña
+            de tu cuenta.
+          </p>
+
+        </header>
+
+
+        <form id="loginForm">
+
+          <div class="form-group">
+
+            <label for="correo">
+              Correo electrónico
+            </label>
+
+            <input
+              id="correo"
+              name="correo"
+              type="email"
+              placeholder="correo@ejemplo.com"
+              autocomplete="email"
+              inputmode="email"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="password">
+              Contraseña
+            </label>
+
+            <div class="password-container">
+
+              <input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Tu contraseña"
+                autocomplete="current-password"
+                required
+              >
+
+              <button
+                id="togglePassword"
+                class="toggle-password"
+                type="button"
+                aria-label="Mostrar contraseña"
+              >
+                VER
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <button
+            id="loginButton"
+            class="login-button"
+            type="submit"
+          >
+            INICIAR SESIÓN
+          </button>
+
+
+          <p
+            id="loginMessage"
+            class="login-message"
+            aria-live="polite"
+          ></p>
+
+        </form>
+
+
+        <div class="register-access">
+
+          <p>¿Todavía no tienes una cuenta?</p>
+
+          <a href="registro.html">
+            CREAR CUENTA
+          </a>
+
+        </div>
+
+
+        <div class="back-auction">
+
+          <a href="index.html">
+            ← VOLVER A LAS SUBASTAS
+          </a>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="login.js"
+  ></script>
+
+</body>
+</html>
