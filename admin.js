@@ -22,7 +22,13 @@ import {
 
   onSnapshot,
 
-  updateDoc
+  updateDoc,
+
+  setDoc,
+
+  serverTimestamp,
+
+  Timestamp
 
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
@@ -32,7 +38,7 @@ import {
 
 /* =====================================================
 
-   ELEMENTOS
+   ELEMENTOS GENERALES
 
 ===================================================== */
 
@@ -98,6 +104,78 @@ const statPendingMembers = document.getElementById("statPendingMembers");
 
  
 
+const statLiveAuctions = document.getElementById("statLiveAuctions");
+
+const statUpcomingAuctions = document.getElementById("statUpcomingAuctions");
+
+ 
+
+const auctionsAdminList = document.getElementById("auctionsAdminList");
+
+const dashboardAuctions = document.getElementById("dashboardAuctions");
+
+ 
+
+ 
+
+/* =====================================================
+
+   MODAL NUEVA SUBASTA
+
+===================================================== */
+
+ 
+
+const auctionModal = document.getElementById("auctionModal");
+
+const auctionForm = document.getElementById("auctionForm");
+
+const closeAuctionModalButton = document.getElementById("closeAuctionModalButton");
+
+const cancelAuctionButton = document.getElementById("cancelAuctionButton");
+
+const saveAuctionButton = document.getElementById("saveAuctionButton");
+
+const auctionFormMessage = document.getElementById("auctionFormMessage");
+
+ 
+
+const auctionId = document.getElementById("auctionId");
+
+const auctionCategory = document.getElementById("auctionCategory");
+
+const auctionBrand = document.getElementById("auctionBrand");
+
+const auctionModel = document.getElementById("auctionModel");
+
+const auctionYear = document.getElementById("auctionYear");
+
+const auctionVersion = document.getElementById("auctionVersion");
+
+const auctionStartPrice = document.getElementById("auctionStartPrice");
+
+const auctionMinIncrement = document.getElementById("auctionMinIncrement");
+
+const auctionRoundDuration = document.getElementById("auctionRoundDuration");
+
+const auctionStatus = document.getElementById("auctionStatus");
+
+const auctionStartDate = document.getElementById("auctionStartDate");
+
+const auctionStartTime = document.getElementById("auctionStartTime");
+
+const auctionLocation = document.getElementById("auctionLocation");
+
+const auctionDescription = document.getElementById("auctionDescription");
+
+const auctionPhotos = document.getElementById("auctionPhotos");
+
+const auctionPhotosLabel = document.getElementById("auctionPhotosLabel");
+
+const auctionPhotoPreview = document.getElementById("auctionPhotoPreview");
+
+ 
+
  
 
 /* =====================================================
@@ -117,6 +195,12 @@ let perfilAdminActual = null;
 let usuariosCargados = [];
 
 let unsubscribeUsuarios = null;
+
+ 
+
+let subastasCargadas = [];
+
+let unsubscribeSubastas = null;
 
  
 
@@ -270,15 +354,7 @@ navItems.forEach((item) => {
 
   item.addEventListener("click", () => {
 
- 
-
-    const sectionName = item.dataset.section;
-
- 
-
-    showSection(sectionName);
-
- 
+    showSection(item.dataset.section);
 
   });
 
@@ -296,15 +372,7 @@ goSectionButtons.forEach((button) => {
 
   button.addEventListener("click", () => {
 
- 
-
-    const sectionName = button.dataset.goSection;
-
- 
-
-    showSection(sectionName);
-
- 
+    showSection(button.dataset.goSection);
 
   });
 
@@ -318,7 +386,7 @@ goSectionButtons.forEach((button) => {
 
 /* =====================================================
 
-   ACCESO DE ADMINISTRADOR
+   ACCESO ADMINISTRADOR
 
 ===================================================== */
 
@@ -326,25 +394,17 @@ goSectionButtons.forEach((button) => {
 
 function showLoading() {
 
- 
-
   if (loading) loading.hidden = false;
 
   if (adminApp) adminApp.hidden = true;
 
   if (accessDenied) accessDenied.hidden = true;
 
- 
-
 }
 
  
 
- 
-
 function showAdmin() {
-
- 
 
   if (loading) loading.hidden = true;
 
@@ -352,17 +412,11 @@ function showAdmin() {
 
   if (adminApp) adminApp.hidden = false;
 
- 
-
 }
 
  
 
- 
-
 function showDenied() {
-
- 
 
   if (loading) loading.hidden = true;
 
@@ -370,11 +424,7 @@ function showDenied() {
 
   if (accessDenied) accessDenied.hidden = false;
 
- 
-
 }
-
- 
 
  
 
@@ -392,13 +442,9 @@ onAuthStateChanged(auth, async (user) => {
 
  
 
-    if (unsubscribeUsuarios) {
+    if (unsubscribeUsuarios) unsubscribeUsuarios();
 
-      unsubscribeUsuarios();
-
-      unsubscribeUsuarios = null;
-
-    }
+    if (unsubscribeSubastas) unsubscribeSubastas();
 
  
 
@@ -418,21 +464,15 @@ onAuthStateChanged(auth, async (user) => {
 
     const userRef = doc(db, "usuarios", user.uid);
 
- 
-
     const userSnap = await getDoc(userRef);
 
  
 
     if (!userSnap.exists()) {
 
- 
-
       showDenied();
 
       return;
-
- 
 
     }
 
@@ -444,13 +484,9 @@ onAuthStateChanged(auth, async (user) => {
 
     if (profile.rol !== "admin") {
 
- 
-
       showDenied();
 
       return;
-
- 
 
     }
 
@@ -464,8 +500,6 @@ onAuthStateChanged(auth, async (user) => {
 
     if (adminUserName) {
 
- 
-
       adminUserName.textContent =
 
         profile.nombre ||
@@ -474,15 +508,11 @@ onAuthStateChanged(auth, async (user) => {
 
         "Administrador";
 
- 
-
     }
 
  
 
     if (adminUserEmail) {
-
- 
 
       adminUserEmail.textContent =
 
@@ -491,8 +521,6 @@ onAuthStateChanged(auth, async (user) => {
         user.email ||
 
         "";
-
- 
 
     }
 
@@ -503,6 +531,8 @@ onAuthStateChanged(auth, async (user) => {
  
 
     iniciarEscuchaUsuarios();
+
+    iniciarEscuchaSubastas();
 
  
 
@@ -560,13 +590,9 @@ if (logoutButton) {
 
  
 
-      if (unsubscribeUsuarios) {
+      if (unsubscribeUsuarios) unsubscribeUsuarios();
 
-        unsubscribeUsuarios();
-
-        unsubscribeUsuarios = null;
-
-      }
+      if (unsubscribeSubastas) unsubscribeSubastas();
 
  
 
@@ -582,13 +608,7 @@ if (logoutButton) {
 
  
 
-      console.error(
-
-        "Error cerrando sesión:",
-
-        error
-
-      );
+      console.error("Error cerrando sesión:", error);
 
  
 
@@ -598,11 +618,7 @@ if (logoutButton) {
 
  
 
-      alert(
-
-        "No se pudo cerrar la sesión. Intenta nuevamente."
-
-      );
+      alert("No se pudo cerrar la sesión. Intenta nuevamente.");
 
  
 
@@ -622,7 +638,7 @@ if (logoutButton) {
 
 /* =====================================================
 
-   MIEMBROS - FIRESTORE EN TIEMPO REAL
+   MIEMBROS
 
 ===================================================== */
 
@@ -704,66 +720,6 @@ function obtenerEstadoMiembro(usuario) {
 
  
 
-function etiquetaEstado(estado) {
-
- 
-
-  if (estado === "activo") {
-
-    return "ACTIVO";
-
-  }
-
- 
-
-  if (estado === "suspendido") {
-
-    return "SUSPENDIDO";
-
-  }
-
- 
-
-  return "PENDIENTE";
-
- 
-
-}
-
- 
-
- 
-
-function colorEstado(estado) {
-
- 
-
-  if (estado === "activo") {
-
-    return "#24c875";
-
-  }
-
- 
-
-  if (estado === "suspendido") {
-
-    return "#ff5b5b";
-
-  }
-
- 
-
-  return "#ffb020";
-
- 
-
-}
-
- 
-
- 
-
 function iniciarEscuchaUsuarios() {
 
  
@@ -772,21 +728,13 @@ function iniciarEscuchaUsuarios() {
 
  
 
-  if (unsubscribeUsuarios) {
-
-    unsubscribeUsuarios();
-
-  }
-
- 
-
-  const usuariosRef = collection(db, "usuarios");
+  if (unsubscribeUsuarios) unsubscribeUsuarios();
 
  
 
   unsubscribeUsuarios = onSnapshot(
 
-    usuariosRef,
+    collection(db, "usuarios"),
 
     (snapshot) => {
 
@@ -808,27 +756,9 @@ function iniciarEscuchaUsuarios() {
 
       usuariosCargados.sort((a, b) => {
 
- 
+        return normalizarTexto(a.nombre || a.correo)
 
-        const nombreA = normalizarTexto(
-
-          a.nombre || a.correo
-
-        );
-
- 
-
-        const nombreB = normalizarTexto(
-
-          b.nombre || b.correo
-
-        );
-
- 
-
-        return nombreA.localeCompare(nombreB);
-
- 
+          .localeCompare(normalizarTexto(b.nombre || b.correo));
 
       });
 
@@ -846,65 +776,7 @@ function iniciarEscuchaUsuarios() {
 
     (error) => {
 
- 
-
-      console.error(
-
-        "Error leyendo usuarios:",
-
-        error
-
-      );
-
- 
-
-      if (membersAdminList) {
-
- 
-
-        membersAdminList.innerHTML = "";
-
- 
-
-        const mensaje = document.createElement("div");
-
-        mensaje.style.padding = "28px";
-
-        mensaje.style.textAlign = "center";
-
- 
-
-        const titulo = document.createElement("strong");
-
-        titulo.textContent = "No se pudieron cargar los miembros";
-
- 
-
-        const texto = document.createElement("p");
-
-        texto.textContent =
-
-          "Falta habilitar en las reglas de Firestore el acceso del administrador a la colección usuarios.";
-
-        texto.style.color = "#9b9da5";
-
-        texto.style.margin = "8px 0 0";
-
- 
-
-        mensaje.appendChild(titulo);
-
-        mensaje.appendChild(texto);
-
- 
-
-        membersAdminList.appendChild(mensaje);
-
- 
-
-      }
-
- 
+      console.error("Error leyendo usuarios:", error);
 
     }
 
@@ -924,9 +796,7 @@ function actualizarResumenMiembros() {
 
   const activos = usuariosCargados.filter(
 
-    (usuario) =>
-
-      obtenerEstadoMiembro(usuario) === "activo"
+    (usuario) => obtenerEstadoMiembro(usuario) === "activo"
 
   );
 
@@ -934,9 +804,7 @@ function actualizarResumenMiembros() {
 
   const pendientes = usuariosCargados.filter(
 
-    (usuario) =>
-
-      obtenerEstadoMiembro(usuario) === "pendiente"
+    (usuario) => obtenerEstadoMiembro(usuario) === "pendiente"
 
   );
 
@@ -994,13 +862,9 @@ function crearBotonMiembro(texto, tipo, uid) {
 
   boton.style.fontSize = "10px";
 
-  boton.style.letterSpacing = ".3px";
-
  
 
   if (tipo === "autorizar") {
-
- 
 
     boton.style.color = "#fff";
 
@@ -1008,19 +872,13 @@ function crearBotonMiembro(texto, tipo, uid) {
 
     boton.style.border = "1px solid #e31b23";
 
- 
-
   } else {
-
- 
 
     boton.style.color = "#fff";
 
     boton.style.background = "transparent";
 
     boton.style.border = "1px solid #3b3d44";
-
- 
 
   }
 
@@ -1096,13 +954,9 @@ function crearFilaMiembro(usuario) {
 
  
 
- 
-
   const telefono = document.createElement("div");
 
-  telefono.textContent =
-
-    usuario.telefono || "Sin teléfono";
+  telefono.textContent = usuario.telefono || "Sin teléfono";
 
   telefono.style.color = "#c8c9cd";
 
@@ -1110,15 +964,45 @@ function crearFilaMiembro(usuario) {
 
  
 
- 
-
   const estadoWrap = document.createElement("div");
-
- 
 
   const badge = document.createElement("span");
 
-  badge.textContent = etiquetaEstado(estado);
+ 
+
+  if (estado === "activo") {
+
+    badge.textContent = "ACTIVO";
+
+    badge.style.color = "#24c875";
+
+    badge.style.border = "1px solid rgba(36,200,117,.45)";
+
+    badge.style.background = "rgba(36,200,117,.10)";
+
+  } else if (estado === "suspendido") {
+
+    badge.textContent = "SUSPENDIDO";
+
+    badge.style.color = "#ff5b5b";
+
+    badge.style.border = "1px solid rgba(255,91,91,.45)";
+
+    badge.style.background = "rgba(255,91,91,.10)";
+
+  } else {
+
+    badge.textContent = "PENDIENTE";
+
+    badge.style.color = "#ffb020";
+
+    badge.style.border = "1px solid rgba(255,176,32,.45)";
+
+    badge.style.background = "rgba(255,176,32,.10)";
+
+  }
+
+ 
 
   badge.style.display = "inline-flex";
 
@@ -1134,19 +1018,9 @@ function crearFilaMiembro(usuario) {
 
   badge.style.fontWeight = "900";
 
-  badge.style.letterSpacing = ".5px";
-
-  badge.style.color = colorEstado(estado);
-
-  badge.style.background = `${colorEstado(estado)}18`;
-
-  badge.style.border = `1px solid ${colorEstado(estado)}55`;
-
  
 
   estadoWrap.appendChild(badge);
-
- 
 
  
 
@@ -1158,29 +1032,15 @@ function crearFilaMiembro(usuario) {
 
   acciones.style.gap = "8px";
 
-  acciones.style.flexWrap = "wrap";
-
  
 
   if (estado !== "activo") {
 
- 
-
     acciones.appendChild(
 
-      crearBotonMiembro(
-
-        "AUTORIZAR",
-
-        "autorizar",
-
-        usuario.id
-
-      )
+      crearBotonMiembro("AUTORIZAR", "autorizar", usuario.id)
 
     );
-
- 
 
   }
 
@@ -1188,23 +1048,11 @@ function crearFilaMiembro(usuario) {
 
   if (estado !== "suspendido") {
 
- 
-
     acciones.appendChild(
 
-      crearBotonMiembro(
-
-        "SUSPENDER",
-
-        "suspender",
-
-        usuario.id
-
-      )
+      crearBotonMiembro("SUSPENDER", "suspender", usuario.id)
 
     );
-
- 
 
   }
 
@@ -1238,11 +1086,7 @@ function renderMiembros() {
 
  
 
-  const busqueda = normalizarTexto(
-
-    memberSearch?.value || ""
-
-  );
+  const busqueda = normalizarTexto(memberSearch?.value || "");
 
  
 
@@ -1254,21 +1098,15 @@ function renderMiembros() {
 
  
 
-    const contenido = normalizarTexto([
+    return normalizarTexto([
 
       usuario.nombre,
 
       usuario.correo,
 
-      usuario.telefono,
+      usuario.telefono
 
-      etiquetaEstado(obtenerEstadoMiembro(usuario))
-
-    ].join(" "));
-
- 
-
-    return contenido.includes(busqueda);
+    ].join(" ")).includes(busqueda);
 
  
 
@@ -1290,65 +1128,17 @@ function renderMiembros() {
 
  
 
-    const vacio = document.createElement("div");
+    const mensaje = document.createElement("div");
 
-    vacio.style.padding = "42px 20px";
+    mensaje.style.padding = "40px";
 
-    vacio.style.textAlign = "center";
+    mensaje.style.textAlign = "center";
 
- 
-
-    const icono = document.createElement("div");
-
-    icono.textContent = "👥";
-
-    icono.style.fontSize = "32px";
+    mensaje.textContent = "No hay miembros para mostrar.";
 
  
 
-    const titulo = document.createElement("strong");
-
-    titulo.textContent =
-
-      busqueda
-
-        ? "No encontramos miembros"
-
-        : "Aún no hay miembros registrados";
-
-    titulo.style.display = "block";
-
-    titulo.style.marginTop = "10px";
-
- 
-
-    const texto = document.createElement("p");
-
-    texto.textContent =
-
-      busqueda
-
-        ? "Prueba con otro nombre, correo o teléfono."
-
-        : "Los usuarios registrados aparecerán aquí.";
-
-    texto.style.color = "#9b9da5";
-
-    texto.style.fontSize = "11px";
-
- 
-
-    vacio.appendChild(icono);
-
-    vacio.appendChild(titulo);
-
-    vacio.appendChild(texto);
-
- 
-
-    membersAdminList.appendChild(vacio);
-
- 
+    membersAdminList.appendChild(mensaje);
 
     return;
 
@@ -1360,15 +1150,7 @@ function renderMiembros() {
 
   filtrados.forEach((usuario) => {
 
- 
-
-    membersAdminList.appendChild(
-
-      crearFilaMiembro(usuario)
-
-    );
-
- 
+    membersAdminList.appendChild(crearFilaMiembro(usuario));
 
   });
 
@@ -1390,13 +1172,7 @@ function renderPendientesDashboard() {
 
   const pendientes = usuariosCargados
 
-    .filter(
-
-      (usuario) =>
-
-        obtenerEstadoMiembro(usuario) === "pendiente"
-
-    )
+    .filter((usuario) => obtenerEstadoMiembro(usuario) === "pendiente")
 
     .slice(0, 5);
 
@@ -1410,9 +1186,7 @@ function renderPendientesDashboard() {
 
  
 
-    dashboardPendingMembers.className =
-
-      "admin-empty-state";
+    dashboardPendingMembers.className = "admin-empty-state";
 
  
 
@@ -1430,9 +1204,7 @@ function renderPendientesDashboard() {
 
     const texto = document.createElement("p");
 
-    texto.textContent =
-
-      "Los registros pendientes aparecerán aquí.";
+    texto.textContent = "Los registros pendientes aparecerán aquí.";
 
  
 
@@ -1453,8 +1225,6 @@ function renderPendientesDashboard() {
  
 
   dashboardPendingMembers.className = "";
-
-  dashboardPendingMembers.style.paddingTop = "6px";
 
  
 
@@ -1488,10 +1258,6 @@ function renderPendientesDashboard() {
 
     nombre.textContent = usuario.nombre || "Sin nombre";
 
-    nombre.style.display = "block";
-
-    nombre.style.fontSize = "12px";
-
  
 
     const correo = document.createElement("small");
@@ -1512,21 +1278,13 @@ function renderPendientesDashboard() {
 
  
 
-    const boton = crearBotonMiembro(
-
-      "AUTORIZAR",
-
-      "autorizar",
-
-      usuario.id
-
-    );
-
- 
-
     fila.appendChild(datos);
 
-    fila.appendChild(boton);
+    fila.appendChild(
+
+      crearBotonMiembro("AUTORIZAR", "autorizar", usuario.id)
+
+    );
 
  
 
@@ -1544,23 +1302,11 @@ function renderPendientesDashboard() {
 
  
 
-/* =====================================================
-
-   ACCIONES DE MIEMBROS
-
-===================================================== */
-
- 
-
 async function autorizarMiembro(uid, boton) {
 
  
 
-  const usuario = usuariosCargados.find(
-
-    (item) => item.id === uid
-
-  );
+  const usuario = usuariosCargados.find((item) => item.id === uid);
 
  
 
@@ -1568,23 +1314,11 @@ async function autorizarMiembro(uid, boton) {
 
  
 
-  const confirmado = window.confirm(
+  if (!confirm(`¿Autorizar a ${usuario.nombre || usuario.correo}?`)) {
 
-    `¿Autorizar la membresía de ${
+    return;
 
-      usuario.nombre || usuario.correo || "este usuario"
-
-    }?\n\nPodrá participar en las pujas.`
-
-  );
-
- 
-
-  if (!confirmado) return;
-
- 
-
-  const textoOriginal = boton.textContent;
+  }
 
  
 
@@ -1598,23 +1332,17 @@ async function autorizarMiembro(uid, boton) {
 
  
 
-    await updateDoc(
+    await updateDoc(doc(db, "usuarios", uid), {
 
-      doc(db, "usuarios", uid),
+      activo: true,
 
-      {
+      membresiaActiva: true,
 
-        activo: true,
+      puedePujar: true,
 
-        membresiaActiva: true,
+      estadoMembresia: "activo"
 
-        puedePujar: true,
-
-        estadoMembresia: "activo"
-
-      }
-
-    );
+    });
 
  
 
@@ -1622,27 +1350,15 @@ async function autorizarMiembro(uid, boton) {
 
  
 
-    console.error(
+    console.error("Error autorizando miembro:", error);
 
-      "Error autorizando miembro:",
-
-      error
-
-    );
-
- 
-
-    alert(
-
-      "No se pudo autorizar al miembro. Revisa las reglas de Firestore."
-
-    );
+    alert("No se pudo autorizar al miembro.");
 
  
 
     boton.disabled = false;
 
-    boton.textContent = textoOriginal;
+    boton.textContent = "AUTORIZAR";
 
  
 
@@ -1660,11 +1376,7 @@ async function suspenderMiembro(uid, boton) {
 
  
 
-  const usuario = usuariosCargados.find(
-
-    (item) => item.id === uid
-
-  );
+  const usuario = usuariosCargados.find((item) => item.id === uid);
 
  
 
@@ -1672,23 +1384,11 @@ async function suspenderMiembro(uid, boton) {
 
  
 
-  const confirmado = window.confirm(
+  if (!confirm(`¿Suspender a ${usuario.nombre || usuario.correo}?`)) {
 
-    `¿Suspender a ${
+    return;
 
-      usuario.nombre || usuario.correo || "este usuario"
-
-    }?\n\nNo podrá participar en las pujas hasta que vuelvas a autorizarlo.`
-
-  );
-
- 
-
-  if (!confirmado) return;
-
- 
-
-  const textoOriginal = boton.textContent;
+  }
 
  
 
@@ -1702,23 +1402,17 @@ async function suspenderMiembro(uid, boton) {
 
  
 
-    await updateDoc(
+    await updateDoc(doc(db, "usuarios", uid), {
 
-      doc(db, "usuarios", uid),
+      activo: false,
 
-      {
+      membresiaActiva: false,
 
-        activo: false,
+      puedePujar: false,
 
-        membresiaActiva: false,
+      estadoMembresia: "suspendida"
 
-        puedePujar: false,
-
-        estadoMembresia: "suspendida"
-
-      }
-
-    );
+    });
 
  
 
@@ -1726,27 +1420,15 @@ async function suspenderMiembro(uid, boton) {
 
  
 
-    console.error(
+    console.error("Error suspendiendo miembro:", error);
 
-      "Error suspendiendo miembro:",
-
-      error
-
-    );
-
- 
-
-    alert(
-
-      "No se pudo suspender al miembro. Revisa las reglas de Firestore."
-
-    );
+    alert("No se pudo suspender al miembro.");
 
  
 
     boton.disabled = false;
 
-    boton.textContent = textoOriginal;
+    boton.textContent = "SUSPENDER";
 
  
 
@@ -1764,11 +1446,7 @@ document.addEventListener("click", async (event) => {
 
  
 
-  const boton = event.target.closest(
-
-    "[data-member-action]"
-
-  );
+  const boton = event.target.closest("[data-member-action]");
 
  
 
@@ -1782,19 +1460,9 @@ document.addEventListener("click", async (event) => {
 
  
 
-  if (!uid) return;
-
- 
-
   if (accion === "autorizar") {
 
- 
-
     await autorizarMiembro(uid, boton);
-
-    return;
-
- 
 
   }
 
@@ -1802,11 +1470,7 @@ document.addEventListener("click", async (event) => {
 
   if (accion === "suspender") {
 
- 
-
     await suspenderMiembro(uid, boton);
-
- 
 
   }
 
@@ -1820,13 +1484,63 @@ document.addEventListener("click", async (event) => {
 
 if (memberSearch) {
 
+  memberSearch.addEventListener("input", renderMiembros);
+
+}
+
  
 
-  memberSearch.addEventListener(
+ 
 
-    "input",
+/* =====================================================
 
-    renderMiembros
+   SUBASTAS EN TIEMPO REAL
+
+===================================================== */
+
+ 
+
+function iniciarEscuchaSubastas() {
+
+ 
+
+  if (unsubscribeSubastas) unsubscribeSubastas();
+
+ 
+
+  unsubscribeSubastas = onSnapshot(
+
+    collection(db, "subastas"),
+
+    (snapshot) => {
+
+ 
+
+      subastasCargadas = snapshot.docs.map((documento) => ({
+
+        id: documento.id,
+
+        ...documento.data()
+
+      }));
+
+ 
+
+      actualizarResumenSubastas();
+
+      renderSubastas();
+
+      renderSubastasDashboard();
+
+ 
+
+    },
+
+    (error) => {
+
+      console.error("Error leyendo subastas:", error);
+
+    }
 
   );
 
@@ -1838,17 +1552,469 @@ if (memberSearch) {
 
  
 
+function actualizarResumenSubastas() {
+
+ 
+
+  const ahora = Date.now();
+
+ 
+
+  const enVivo = subastasCargadas.filter((subasta) => {
+
+    return subasta.estado === "en_vivo";
+
+  });
+
+ 
+
+  const proximas = subastasCargadas.filter((subasta) => {
+
+ 
+
+    const fechaMs =
+
+      subasta.fechaInicio &&
+
+      typeof subasta.fechaInicio.toMillis === "function"
+
+        ? subasta.fechaInicio.toMillis()
+
+        : 0;
+
+ 
+
+    return subasta.estado === "programada" && fechaMs > ahora;
+
+ 
+
+  });
+
+ 
+
+  if (statLiveAuctions) {
+
+    statLiveAuctions.textContent = String(enVivo.length);
+
+  }
+
+ 
+
+  if (statUpcomingAuctions) {
+
+    statUpcomingAuctions.textContent = String(proximas.length);
+
+  }
+
+ 
+
+}
+
+ 
+
+ 
+
+function formatearFechaSubasta(fecha) {
+
+ 
+
+  if (!fecha || typeof fecha.toDate !== "function") {
+
+    return "Sin fecha";
+
+  }
+
+ 
+
+  return fecha.toDate().toLocaleString("es-MX", {
+
+    dateStyle: "medium",
+
+    timeStyle: "short"
+
+  });
+
+ 
+
+}
+
+ 
+
+ 
+
+function renderSubastas() {
+
+ 
+
+  if (!auctionsAdminList) return;
+
+ 
+
+  auctionsAdminList.innerHTML = "";
+
+  auctionsAdminList.style.minHeight = "0";
+
+  auctionsAdminList.style.display = "block";
+
+  auctionsAdminList.style.textAlign = "left";
+
+ 
+
+  if (subastasCargadas.length === 0) {
+
+ 
+
+    const vacio = document.createElement("div");
+
+    vacio.style.padding = "50px 20px";
+
+    vacio.style.textAlign = "center";
+
+    vacio.innerHTML =
+
+      "<div style='font-size:32px'>🔨</div><strong style='display:block;margin-top:10px'>Aún no hay subastas</strong><p style='color:#9b9da5'>Crea la primera con el botón + NUEVA SUBASTA.</p>";
+
+ 
+
+    auctionsAdminList.appendChild(vacio);
+
+    return;
+
+ 
+
+  }
+
+ 
+
+  const ordenadas = [...subastasCargadas].sort((a, b) => {
+
+ 
+
+    const fa = a.fechaInicio?.toMillis?.() || 0;
+
+    const fb = b.fechaInicio?.toMillis?.() || 0;
+
+ 
+
+    return fb - fa;
+
+ 
+
+  });
+
+ 
+
+  ordenadas.forEach((subasta) => {
+
+ 
+
+    const fila = document.createElement("div");
+
+ 
+
+    fila.style.display = "grid";
+
+    fila.style.gridTemplateColumns =
+
+      "minmax(220px,1.4fr) minmax(180px,1fr) 150px 140px";
+
+    fila.style.gap = "16px";
+
+    fila.style.alignItems = "center";
+
+    fila.style.padding = "18px 0";
+
+    fila.style.borderBottom = "1px solid #292b31";
+
+ 
+
+    const principal = document.createElement("div");
+
+ 
+
+    const titulo = document.createElement("strong");
+
+    titulo.textContent =
+
+      `${subasta.marca || ""} ${subasta.modelo || ""} ${subasta.anio || ""}`.trim()
+
+      || subasta.id;
+
+ 
+
+    titulo.style.display = "block";
+
+    titulo.style.fontSize = "13px";
+
+ 
+
+    const lote = document.createElement("small");
+
+    lote.textContent = subasta.id;
+
+    lote.style.display = "block";
+
+    lote.style.marginTop = "5px";
+
+    lote.style.color = "#9b9da5";
+
+ 
+
+    principal.appendChild(titulo);
+
+    principal.appendChild(lote);
+
+ 
+
+    const fecha = document.createElement("div");
+
+    fecha.textContent = formatearFechaSubasta(subasta.fechaInicio);
+
+    fecha.style.fontSize = "12px";
+
+    fecha.style.color = "#c8c9cd";
+
+ 
+
+    const precio = document.createElement("strong");
+
+    precio.textContent =
+
+      `$${Number(subasta.pujaActual || 0).toLocaleString("es-MX")} MXN`;
+
+    precio.style.fontSize = "12px";
+
+ 
+
+    const estado = document.createElement("span");
+
+    estado.textContent = String(subasta.estado || "programada").toUpperCase();
+
+    estado.style.fontSize = "10px";
+
+    estado.style.fontWeight = "900";
+
+    estado.style.color =
+
+      subasta.estado === "en_vivo" ? "#24c875" : "#ffb020";
+
+ 
+
+    fila.appendChild(principal);
+
+    fila.appendChild(fecha);
+
+    fila.appendChild(precio);
+
+    fila.appendChild(estado);
+
+ 
+
+    auctionsAdminList.appendChild(fila);
+
+ 
+
+  });
+
+ 
+
+}
+
+ 
+
+ 
+
+function renderSubastasDashboard() {
+
+ 
+
+  if (!dashboardAuctions) return;
+
+ 
+
+  dashboardAuctions.innerHTML = "";
+
+ 
+
+  const ultimas = [...subastasCargadas]
+
+    .sort((a, b) => {
+
+      const fa = a.creadoEn?.toMillis?.() || 0;
+
+      const fb = b.creadoEn?.toMillis?.() || 0;
+
+      return fb - fa;
+
+    })
+
+    .slice(0, 5);
+
+ 
+
+  if (ultimas.length === 0) {
+
+ 
+
+    dashboardAuctions.className = "admin-empty-state";
+
+ 
+
+    dashboardAuctions.innerHTML =
+
+      "<span>🔨</span><strong>Aún no hay datos para mostrar</strong><p>Las subastas aparecerán aquí cuando crees la primera.</p>";
+
+ 
+
+    return;
+
+ 
+
+  }
+
+ 
+
+  dashboardAuctions.className = "";
+
+ 
+
+  ultimas.forEach((subasta) => {
+
+ 
+
+    const fila = document.createElement("div");
+
+ 
+
+    fila.style.display = "flex";
+
+    fila.style.alignItems = "center";
+
+    fila.style.justifyContent = "space-between";
+
+    fila.style.gap = "12px";
+
+    fila.style.padding = "14px 0";
+
+    fila.style.borderBottom = "1px solid #292b31";
+
+ 
+
+    const datos = document.createElement("div");
+
+ 
+
+    const titulo = document.createElement("strong");
+
+    titulo.textContent =
+
+      `${subasta.marca || ""} ${subasta.modelo || ""}`.trim()
+
+      || subasta.id;
+
+ 
+
+    const fecha = document.createElement("small");
+
+    fecha.textContent = formatearFechaSubasta(subasta.fechaInicio);
+
+    fecha.style.display = "block";
+
+    fecha.style.marginTop = "4px";
+
+    fecha.style.color = "#9b9da5";
+
+ 
+
+    datos.appendChild(titulo);
+
+    datos.appendChild(fecha);
+
+ 
+
+    const estado = document.createElement("strong");
+
+    estado.textContent = String(subasta.estado || "programada").toUpperCase();
+
+    estado.style.fontSize = "10px";
+
+    estado.style.color =
+
+      subasta.estado === "en_vivo" ? "#24c875" : "#ffb020";
+
+ 
+
+    fila.appendChild(datos);
+
+    fila.appendChild(estado);
+
+ 
+
+    dashboardAuctions.appendChild(fila);
+
+ 
+
+  });
+
+ 
+
+}
+
+ 
+
+ 
+
 /* =====================================================
 
-   BOTONES DE NUEVA SUBASTA
-
-   El formulario real se conecta en la siguiente etapa.
+   MODAL NUEVA SUBASTA
 
 ===================================================== */
 
  
 
-function openAuctionSection() {
+function generarSiguienteIdSubasta() {
+
+ 
+
+  const numeros = subastasCargadas
+
+    .map((subasta) => {
+
+ 
+
+      const match = String(subasta.id || "").match(/^SF-(\d+)$/i);
+
+ 
+
+      return match ? Number(match[1]) : 0;
+
+ 
+
+    })
+
+    .filter((numero) => Number.isFinite(numero));
+
+ 
+
+  const maximo = numeros.length
+
+    ? Math.max(...numeros)
+
+    : 10048;
+
+ 
+
+  return `SF-${maximo + 1}`;
+
+ 
+
+}
+
+ 
+
+ 
+
+function abrirModalSubasta() {
 
  
 
@@ -1856,25 +2022,75 @@ function openAuctionSection() {
 
  
 
-  const auctionList =
+  if (!auctionModal) {
 
-    document.getElementById("auctionsAdminList");
+    alert("No se encontró el formulario de nueva subasta. Revisa admin.html.");
+
+    return;
+
+  }
+
+ 
+
+  if (auctionId && !auctionId.value) {
+
+    auctionId.value = generarSiguienteIdSubasta();
+
+  }
 
  
 
-  if (auctionList) {
+  if (auctionRoundDuration) {
+
+    auctionRoundDuration.value =
+
+      document.getElementById("defaultRoundDuration")?.value || 120;
+
+  }
 
  
 
-    auctionList.scrollIntoView({
+  if (auctionMinIncrement) {
 
-      behavior: "smooth",
+    auctionMinIncrement.value =
 
-      block: "center"
+      document.getElementById("defaultIncrement")?.value || 500;
 
-    });
+  }
 
  
+
+  auctionModal.hidden = false;
+
+  document.body.style.overflow = "hidden";
+
+ 
+
+}
+
+ 
+
+ 
+
+function cerrarModalSubasta() {
+
+ 
+
+  if (!auctionModal) return;
+
+ 
+
+  auctionModal.hidden = true;
+
+  document.body.style.overflow = "";
+
+ 
+
+  if (auctionFormMessage) {
+
+    auctionFormMessage.hidden = true;
+
+    auctionFormMessage.textContent = "";
 
   }
 
@@ -1888,15 +2104,129 @@ function openAuctionSection() {
 
 if (newAuctionButton) {
 
+  newAuctionButton.addEventListener("click", abrirModalSubasta);
+
+}
+
  
 
-  newAuctionButton.addEventListener(
+if (newAuctionTopButton) {
 
-    "click",
+  newAuctionTopButton.addEventListener("click", abrirModalSubasta);
 
-    openAuctionSection
+}
 
-  );
+ 
+
+if (closeAuctionModalButton) {
+
+  closeAuctionModalButton.addEventListener("click", cerrarModalSubasta);
+
+}
+
+ 
+
+if (cancelAuctionButton) {
+
+  cancelAuctionButton.addEventListener("click", cerrarModalSubasta);
+
+}
+
+ 
+
+document.querySelectorAll("[data-close-auction-modal]").forEach((elemento) => {
+
+  elemento.addEventListener("click", cerrarModalSubasta);
+
+});
+
+ 
+
+document.addEventListener("keydown", (event) => {
+
+  if (event.key === "Escape" && auctionModal && !auctionModal.hidden) {
+
+    cerrarModalSubasta();
+
+  }
+
+});
+
+ 
+
+ 
+
+/* =====================================================
+
+   PREVISUALIZACIÓN DE FOTOS
+
+===================================================== */
+
+ 
+
+if (auctionPhotos) {
+
+ 
+
+  auctionPhotos.addEventListener("change", () => {
+
+ 
+
+    const archivos = Array.from(auctionPhotos.files || []);
+
+ 
+
+    if (auctionPhotosLabel) {
+
+      auctionPhotosLabel.textContent =
+
+        archivos.length === 0
+
+          ? "Puedes elegir varias imágenes."
+
+          : `${archivos.length} foto(s) seleccionada(s).`;
+
+    }
+
+ 
+
+    if (!auctionPhotoPreview) return;
+
+ 
+
+    auctionPhotoPreview.innerHTML = "";
+
+ 
+
+    archivos.slice(0, 8).forEach((archivo) => {
+
+ 
+
+      const url = URL.createObjectURL(archivo);
+
+ 
+
+      const img = document.createElement("img");
+
+ 
+
+      img.src = url;
+
+      img.alt = archivo.name;
+
+      img.onload = () => URL.revokeObjectURL(url);
+
+ 
+
+      auctionPhotoPreview.appendChild(img);
+
+ 
+
+    });
+
+ 
+
+  });
 
  
 
@@ -1906,17 +2236,347 @@ if (newAuctionButton) {
 
  
 
-if (newAuctionTopButton) {
+/* =====================================================
+
+   CREAR SUBASTA EN FIRESTORE
+
+===================================================== */
 
  
 
-  newAuctionTopButton.addEventListener(
+if (auctionForm) {
 
-    "click",
+ 
 
-    openAuctionSection
+  auctionForm.addEventListener("submit", async (event) => {
 
-  );
+ 
+
+    event.preventDefault();
+
+ 
+
+    if (!usuarioAdminActual || perfilAdminActual?.rol !== "admin") {
+
+      alert("No tienes permisos de administrador.");
+
+      return;
+
+    }
+
+ 
+
+    const id = String(auctionId?.value || "").trim().toUpperCase();
+
+    const marca = String(auctionBrand?.value || "").trim();
+
+    const modelo = String(auctionModel?.value || "").trim();
+
+ 
+
+    const precioInicial = Number(auctionStartPrice?.value || 0);
+
+    const incremento = Number(auctionMinIncrement?.value || 0);
+
+    const duracionRonda = Number(auctionRoundDuration?.value || 0);
+
+ 
+
+    const fecha = String(auctionStartDate?.value || "");
+
+    const hora = String(auctionStartTime?.value || "");
+
+ 
+
+    if (!id || !marca || !modelo || !fecha || !hora) {
+
+      alert("Completa los campos obligatorios.");
+
+      return;
+
+    }
+
+ 
+
+    if (!Number.isFinite(precioInicial) || precioInicial < 0) {
+
+      alert("El precio inicial no es válido.");
+
+      return;
+
+    }
+
+ 
+
+    if (!Number.isFinite(incremento) || incremento < 1) {
+
+      alert("El incremento mínimo no es válido.");
+
+      return;
+
+    }
+
+ 
+
+    if (!Number.isFinite(duracionRonda) || duracionRonda < 10) {
+
+      alert("La duración de ronda no es válida.");
+
+      return;
+
+    }
+
+ 
+
+    const fechaLocal = new Date(`${fecha}T${hora}:00`);
+
+ 
+
+    if (Number.isNaN(fechaLocal.getTime())) {
+
+      alert("La fecha u hora no es válida.");
+
+      return;
+
+    }
+
+ 
+
+    if (saveAuctionButton) {
+
+      saveAuctionButton.disabled = true;
+
+      saveAuctionButton.textContent = "CREANDO...";
+
+    }
+
+ 
+
+    try {
+
+ 
+
+      const referencia = doc(db, "subastas", id);
+
+ 
+
+      const existe = await getDoc(referencia);
+
+ 
+
+      if (existe.exists()) {
+
+        throw new Error("YA_EXISTE");
+
+      }
+
+ 
+
+      await setDoc(referencia, {
+
+ 
+
+        id,
+
+ 
+
+        categoria: String(auctionCategory?.value || "vehiculo"),
+
+ 
+
+        marca,
+
+        modelo,
+
+ 
+
+        anio:
+
+          auctionYear?.value
+
+            ? Number(auctionYear.value)
+
+            : null,
+
+ 
+
+        version: String(auctionVersion?.value || "").trim(),
+
+ 
+
+        ubicacion: String(auctionLocation?.value || "").trim(),
+
+ 
+
+        descripcion: String(auctionDescription?.value || "").trim(),
+
+ 
+
+        precioInicial,
+
+        pujaActual: precioInicial,
+
+ 
+
+        incrementoMinimo: incremento,
+
+ 
+
+        duracionRonda,
+
+ 
+
+        fechaInicio: Timestamp.fromDate(fechaLocal),
+
+ 
+
+        estado: String(auctionStatus?.value || "programada"),
+
+ 
+
+        totalPujas: 0,
+
+ 
+
+        ultimaPujaUid: "",
+
+        ultimaPujaNombre: "",
+
+        ultimaPujaFecha: null,
+
+ 
+
+        fotos: [],
+
+ 
+
+        creadoPorUid: usuarioAdminActual.uid,
+
+        creadoPorCorreo:
+
+          perfilAdminActual?.correo ||
+
+          usuarioAdminActual.email ||
+
+          "",
+
+ 
+
+        creadoEn: serverTimestamp(),
+
+        actualizadoEn: serverTimestamp()
+
+ 
+
+      });
+
+ 
+
+      if (auctionFormMessage) {
+
+        auctionFormMessage.hidden = false;
+
+        auctionFormMessage.textContent =
+
+          `Subasta ${id} creada correctamente.`;
+
+      }
+
+ 
+
+      auctionForm.reset();
+
+ 
+
+      if (auctionMinIncrement) {
+
+        auctionMinIncrement.value = "500";
+
+      }
+
+ 
+
+      if (auctionRoundDuration) {
+
+        auctionRoundDuration.value = "120";
+
+      }
+
+ 
+
+      if (auctionPhotosLabel) {
+
+        auctionPhotosLabel.textContent =
+
+          "Puedes elegir varias imágenes.";
+
+      }
+
+ 
+
+      if (auctionPhotoPreview) {
+
+        auctionPhotoPreview.innerHTML = "";
+
+      }
+
+ 
+
+      setTimeout(() => {
+
+        cerrarModalSubasta();
+
+      }, 700);
+
+ 
+
+    } catch (error) {
+
+ 
+
+      console.error("Error creando subasta:", error);
+
+ 
+
+      if (error.message === "YA_EXISTE") {
+
+        alert("Ya existe una subasta con ese ID / lote.");
+
+      } else if (error.code === "permission-denied") {
+
+        alert(
+
+          "Firebase bloqueó la creación. Falta publicar las reglas de administrador para subastas."
+
+        );
+
+      } else {
+
+        alert("No se pudo crear la subasta.");
+
+      }
+
+ 
+
+    } finally {
+
+ 
+
+      if (saveAuctionButton) {
+
+        saveAuctionButton.disabled = false;
+
+        saveAuctionButton.textContent = "CREAR SUBASTA";
+
+      }
+
+ 
+
+    }
+
+ 
+
+  });
 
  
 
@@ -1929,10 +2589,6 @@ if (newAuctionTopButton) {
 /* =====================================================
 
    CONFIGURACIÓN
-
-   El guardado real se conectará con el módulo
-
-   de creación de subastas.
 
 ===================================================== */
 
@@ -1948,83 +2604,37 @@ if (saveSettingsButton) {
 
     const durationInput =
 
-      document.getElementById(
-
-        "defaultRoundDuration"
-
-      );
+      document.getElementById("defaultRoundDuration");
 
  
 
     const incrementInput =
 
-      document.getElementById(
-
-        "defaultIncrement"
-
-      );
+      document.getElementById("defaultIncrement");
 
  
 
-    const duration =
+    const duration = Number(durationInput?.value || 0);
 
-      Number(durationInput?.value || 0);
-
- 
-
-    const increment =
-
-      Number(incrementInput?.value || 0);
+    const increment = Number(incrementInput?.value || 0);
 
  
 
-    if (
+    if (!Number.isFinite(duration) || duration < 10) {
 
-      !Number.isFinite(duration) ||
-
-      duration < 10
-
-    ) {
-
- 
-
-      alert(
-
-        "La duración debe ser de al menos 10 segundos."
-
-      );
-
- 
+      alert("La duración debe ser de al menos 10 segundos.");
 
       return;
-
- 
 
     }
 
  
 
-    if (
+    if (!Number.isFinite(increment) || increment < 1) {
 
-      !Number.isFinite(increment) ||
-
-      increment < 1
-
-    ) {
-
- 
-
-      alert(
-
-        "El incremento mínimo debe ser mayor a 0."
-
-      );
-
- 
+      alert("El incremento mínimo debe ser mayor a 0.");
 
       return;
-
- 
 
     }
 
@@ -2032,17 +2642,11 @@ if (saveSettingsButton) {
 
     if (settingsMessage) {
 
- 
-
       settingsMessage.hidden = false;
-
- 
 
       settingsMessage.textContent =
 
-        "Configuración validada. El guardado en Firebase se conectará con el módulo de subastas.";
-
- 
+        "Configuración validada. Estos valores se usarán al crear nuevas subastas.";
 
     }
 
