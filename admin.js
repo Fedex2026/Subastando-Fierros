@@ -98,6 +98,8 @@ let usuariosCargados = [];
 let unsubscribeUsuarios = null;
 let subastasCargadas = [];
 let unsubscribeSubastas = null;
+let fotosAcumuladas = [];
+let videosAcumulados = [];
 /* =====================================================
    CONFIGURACIÓN DE SECCIONES
 ===================================================== */
@@ -781,25 +783,36 @@ function limpiarMensajeFormulario() {
   auctionFormMessage.textContent = "";
   delete auctionFormMessage.dataset.type;
 }
-function archivosSeleccionados(input, maximo) {
-  return Array.from(input?.files || []).slice(0, maximo);
+function claveArchivo(archivo) {
+  return `${archivo.name}__${archivo.size}__${archivo.lastModified}`;
+}
+function combinarArchivos(acumulados, nuevos, maximo) {
+  const mapa = new Map();
+  [...acumulados, ...nuevos].forEach((archivo) => {
+    mapa.set(claveArchivo(archivo), archivo);
+  });
+  return Array.from(mapa.values()).slice(0, maximo);
+}
+function archivosSeleccionados(tipo) {
+  return tipo === "video" ? [...videosAcumulados] : [...fotosAcumuladas];
 }
 if (auctionPhotos) {
   auctionPhotos.addEventListener("change", () => {
-    const todos = Array.from(auctionPhotos.files || []);
-    if (todos.length > MAX_FOTOS) {
+    const nuevos = Array.from(auctionPhotos.files || []);
+    const totalAntes = fotosAcumuladas.length;
+    fotosAcumuladas = combinarArchivos(fotosAcumuladas, nuevos, MAX_FOTOS);
+    if (totalAntes + nuevos.length > MAX_FOTOS) {
       alert(`Puedes subir máximo ${MAX_FOTOS} fotos por subasta.`);
-      auctionPhotos.value = "";
     }
-    const archivos = archivosSeleccionados(auctionPhotos, MAX_FOTOS);
+    auctionPhotos.value = "";
     if (auctionPhotosLabel) {
-      auctionPhotosLabel.textContent = archivos.length === 0
+      auctionPhotosLabel.textContent = fotosAcumuladas.length === 0
         ? `Puedes elegir hasta ${MAX_FOTOS} imágenes.`
-        : `${archivos.length} foto(s) seleccionada(s). La primera será la portada.`;
+        : `${fotosAcumuladas.length} foto(s) seleccionada(s). Puedes volver a seleccionar más. La primera será la portada.`;
     }
     if (!auctionPhotoPreview) return;
     auctionPhotoPreview.innerHTML = "";
-    archivos.forEach((archivo, indice) => {
+    fotosAcumuladas.forEach((archivo, indice) => {
       const url = URL.createObjectURL(archivo);
       const contenedor = document.createElement("div");
       contenedor.style.position = "relative";
@@ -828,20 +841,21 @@ if (auctionPhotos) {
 }
 if (auctionVideos) {
   auctionVideos.addEventListener("change", () => {
-    const todos = Array.from(auctionVideos.files || []);
-    if (todos.length > MAX_VIDEOS) {
+    const nuevos = Array.from(auctionVideos.files || []);
+    const totalAntes = videosAcumulados.length;
+    videosAcumulados = combinarArchivos(videosAcumulados, nuevos, MAX_VIDEOS);
+    if (totalAntes + nuevos.length > MAX_VIDEOS) {
       alert(`Puedes subir máximo ${MAX_VIDEOS} videos por subasta.`);
-      auctionVideos.value = "";
     }
-    const archivos = archivosSeleccionados(auctionVideos, MAX_VIDEOS);
+    auctionVideos.value = "";
     if (auctionVideosLabel) {
-      auctionVideosLabel.textContent = archivos.length === 0
+      auctionVideosLabel.textContent = videosAcumulados.length === 0
         ? `Puedes elegir hasta ${MAX_VIDEOS} videos.`
-        : `${archivos.length} video(s) seleccionado(s).`;
+        : `${videosAcumulados.length} video(s) seleccionado(s). Puedes volver a seleccionar más.`;
     }
     if (!auctionVideoPreview) return;
     auctionVideoPreview.innerHTML = "";
-    archivos.forEach((archivo) => {
+    videosAcumulados.forEach((archivo) => {
       const url = URL.createObjectURL(archivo);
       const video = document.createElement("video");
       video.src = url;
@@ -900,8 +914,8 @@ if (auctionForm) {
     const duracionRonda = Number(auctionRoundDuration?.value || 0);
     const fecha = String(auctionStartDate?.value || "");
     const hora = String(auctionStartTime?.value || "");
-    const fotosSeleccionadas = archivosSeleccionados(auctionPhotos, MAX_FOTOS);
-    const videosSeleccionados = archivosSeleccionados(auctionVideos, MAX_VIDEOS);
+    const fotosSeleccionadas = archivosSeleccionados("foto");
+    const videosSeleccionados = archivosSeleccionados("video");
     if (!id || !marca || !modelo || !fecha || !hora) {
       alert("Completa los campos obligatorios.");
       return;
@@ -1000,6 +1014,8 @@ if (auctionForm) {
       if (auctionVideosLabel) auctionVideosLabel.textContent = `Puedes elegir hasta ${MAX_VIDEOS} videos.`;
       if (auctionPhotoPreview) auctionPhotoPreview.innerHTML = "";
       if (auctionVideoPreview) auctionVideoPreview.innerHTML = "";
+      fotosAcumuladas = [];
+      videosAcumulados = [];
       setTimeout(() => cerrarModalSubasta(), 900);
     } catch (error) {
       console.error("Error creando subasta:", error);
