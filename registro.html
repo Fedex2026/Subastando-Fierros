@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta name="theme-color" content="#080808">
+
+  <title>Crear cuenta | Subastando Fierros</title>
+
+  <link rel="stylesheet" href="registro.css">
+</head>
+
+<body>
+
+  <main class="register-page">
+
+    <section class="register-hero">
+
+      <div class="hero-content">
+
+        <div class="brand">
+          <div class="brand-icon">SF</div>
+
+          <div>
+            <h1>SUBASTANDO FIERROS</h1>
+            <p>SUBASTAS DE AUTOS Y MOTOS EN VIVO</p>
+          </div>
+        </div>
+
+        <div class="hero-message">
+
+          <span class="hero-badge">
+            PUJA EN VIVO
+          </span>
+
+          <h2>
+            Los fierros se ganan
+            <strong>pujando.</strong>
+          </h2>
+
+          <p>
+            Crea tu cuenta para seguir nuestras subastas
+            y participar desde tu celular.
+          </p>
+
+        </div>
+
+        <div class="hero-features">
+
+          <div class="feature">
+            <span>✓</span>
+            <div>
+              <b>Subastas en tiempo real</b>
+              <small>Sigue cada puja desde cualquier dispositivo.</small>
+            </div>
+          </div>
+
+          <div class="feature">
+            <span>✓</span>
+            <div>
+              <b>Autos y motos</b>
+              <small>Consulta información antes de participar.</small>
+            </div>
+          </div>
+
+          <div class="feature">
+            <span>✓</span>
+            <div>
+              <b>Acceso con membresía</b>
+              <small>Los miembros activos pueden realizar pujas.</small>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <footer>
+        Subastando Fierros México
+      </footer>
+
+    </section>
+
+
+    <section class="register-panel">
+
+      <div class="register-card">
+
+        <div class="mobile-brand">
+          <div class="brand-icon">SF</div>
+
+          <div>
+            <h1>SUBASTANDO FIERROS</h1>
+            <p>SUBASTAS EN VIVO</p>
+          </div>
+        </div>
+
+        <header class="register-heading">
+
+          <span>CREA TU CUENTA</span>
+
+          <h2>Regístrate</h2>
+
+          <p>
+            Ingresa tus datos para crear tu cuenta
+            en Subastando Fierros.
+          </p>
+
+        </header>
+
+
+        <form id="registerForm">
+
+          <div class="form-group">
+
+            <label for="nombre">
+              Nombre completo
+            </label>
+
+            <input
+              id="nombre"
+              name="nombre"
+              type="text"
+              placeholder="Tu nombre completo"
+              autocomplete="name"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="telefono">
+              Teléfono
+            </label>
+
+            <input
+              id="telefono"
+              name="telefono"
+              type="tel"
+              placeholder="55 1234 5678"
+              autocomplete="tel"
+              inputmode="tel"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="correo">
+              Correo electrónico
+            </label>
+
+            <input
+              id="correo"
+              name="correo"
+              type="email"
+              placeholder="correo@ejemplo.com"
+              autocomplete="email"
+              inputmode="email"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="password">
+              Contraseña
+            </label>
+
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Mínimo 6 caracteres"
+              autocomplete="new-password"
+              minlength="6"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="confirmPassword">
+              Confirmar contraseña
+            </label>
+
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              placeholder="Repite tu contraseña"
+              autocomplete="new-password"
+              minlength="6"
+              required
+            >
+
+          </div>
+
+
+          <label class="terms-row">
+
+            <input
+              id="aceptaTerminos"
+              type="checkbox"
+              required
+            >
+
+            <span>
+              Acepto los términos y condiciones
+              y el aviso de privacidad.
+            </span>
+
+          </label>
+
+
+          <button
+            id="registerButton"
+            class="register-button"
+            type="submit"
+          >
+            CREAR CUENTA
+          </button>
+
+
+          <p
+            id="registerMessage"
+            class="register-message"
+            aria-live="polite"
+          ></p>
+
+        </form>
+
+
+        <div class="membership-notice">
+
+          <span>★</span>
+
+          <div>
+            <b>La cuenta no activa automáticamente tu membresía.</b>
+
+            <p>
+              Podrás ver las subastas. Para realizar pujas,
+              tu membresía deberá estar activa.
+            </p>
+          </div>
+
+        </div>
+
+
+        <div class="login-access">
+
+          <p>¿Ya tienes una cuenta?</p>
+
+          <a href="login.html">
+            INICIAR SESIÓN
+          </a>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="registro.js"
+  ></script>
+
+</body>
+</html>
