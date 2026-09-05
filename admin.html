@@ -448,15 +448,9 @@
 
           <span>🔨</span>
 
-          <strong>Módulo de subastas listo para conectar</strong>
+          <strong>Aún no hay subastas cargadas</strong>
 
-          <p>
-
-            Aquí aparecerán las subastas con fecha, hora, precio,
-
-            incremento, fotos y estado.
-
-          </p>
+          <p>Las subastas que crees aparecerán aquí.</p>
 
         </div>
 
@@ -512,11 +506,7 @@
 
           <strong>Módulo de miembros listo para conectar</strong>
 
-          <p>
-
-            Aquí podrás revisar membresías y autorizar el acceso a las pujas.
-
-          </p>
+          <p>Aquí podrás revisar membresías y autorizar el acceso a las pujas.</p>
 
         </div>
 
@@ -671,6 +661,600 @@
  
 
     </main>
+
+ 
+
+  </div>
+
+ 
+
+ 
+
+  <!-- =====================================================
+
+       MODAL - NUEVA SUBASTA
+
+  ====================================================== -->
+
+ 
+
+  <div id="auctionModal" class="admin-modal" hidden>
+
+ 
+
+    <div class="admin-modal-backdrop" data-close-auction-modal></div>
+
+ 
+
+    <div class="admin-modal-card">
+
+ 
+
+      <div class="admin-modal-header">
+
+ 
+
+        <div>
+
+          <span class="admin-modal-kicker">NUEVA SUBASTA</span>
+
+          <h2>Crear subasta</h2>
+
+          <p>Captura los datos principales del vehículo o artículo.</p>
+
+        </div>
+
+ 
+
+        <button
+
+          id="closeAuctionModalButton"
+
+          class="admin-modal-close"
+
+          type="button"
+
+          aria-label="Cerrar"
+
+        >
+
+          ✕
+
+        </button>
+
+ 
+
+      </div>
+
+ 
+
+      <form id="auctionForm" autocomplete="off">
+
+ 
+
+        <div class="admin-modal-body">
+
+ 
+
+          <div class="admin-form-section">
+
+            <div class="admin-form-section-title">
+
+              <strong>Datos principales</strong>
+
+              <small>Información que verá el usuario.</small>
+
+            </div>
+
+ 
+
+            <div class="admin-form-grid">
+
+ 
+
+              <label>
+
+                <span>ID / Lote</span>
+
+                <input
+
+                  id="auctionId"
+
+                  name="auctionId"
+
+                  type="text"
+
+                  placeholder="Ej. SF-10049"
+
+                  required
+
+                />
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Categoría</span>
+
+                <select id="auctionCategory" name="auctionCategory" required>
+
+                  <option value="vehiculo">Vehículo</option>
+
+                  <option value="moto">Moto</option>
+
+                  <option value="maquinaria">Maquinaria</option>
+
+                  <option value="otro">Otro</option>
+
+                </select>
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Marca</span>
+
+                <input
+
+                  id="auctionBrand"
+
+                  name="auctionBrand"
+
+                  type="text"
+
+                  placeholder="Ej. Nissan"
+
+                  required
+
+                />
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Modelo</span>
+
+                <input
+
+                  id="auctionModel"
+
+                  name="auctionModel"
+
+                  type="text"
+
+                  placeholder="Ej. Tsuru"
+
+                  required
+
+                />
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Año</span>
+
+                <input
+
+                  id="auctionYear"
+
+                  name="auctionYear"
+
+                  type="number"
+
+                  min="1900"
+
+                  max="2100"
+
+                  placeholder="Ej. 2015"
+
+                />
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Versión</span>
+
+                <input
+
+                  id="auctionVersion"
+
+                  name="auctionVersion"
+
+                  type="text"
+
+                  placeholder="Ej. GS II"
+
+                />
+
+              </label>
+
+ 
+
+            </div>
+
+          </div>
+
+ 
+
+ 
+
+          <div class="admin-form-section">
+
+            <div class="admin-form-section-title">
+
+              <strong>Precio y pujas</strong>
+
+              <small>Valores iniciales de la subasta.</small>
+
+            </div>
+
+ 
+
+            <div class="admin-form-grid">
+
+ 
+
+              <label>
+
+                <span>Precio inicial</span>
+
+                <div class="admin-input-with-suffix">
+
+                  <input
+
+                    id="auctionStartPrice"
+
+                    name="auctionStartPrice"
+
+                    type="number"
+
+                    min="0"
+
+                    step="1"
+
+                    placeholder="0"
+
+                    required
+
+                  />
+
+                  <b>MXN</b>
+
+                </div>
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Incremento mínimo</span>
+
+                <div class="admin-input-with-suffix">
+
+                  <input
+
+                    id="auctionMinIncrement"
+
+                    name="auctionMinIncrement"
+
+                    type="number"
+
+                    min="1"
+
+                    step="1"
+
+                    value="500"
+
+                    required
+
+                  />
+
+                  <b>MXN</b>
+
+                </div>
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Duración de ronda</span>
+
+                <div class="admin-input-with-suffix">
+
+                  <input
+
+                    id="auctionRoundDuration"
+
+                    name="auctionRoundDuration"
+
+                    type="number"
+
+                    min="10"
+
+                    step="1"
+
+                    value="120"
+
+                    required
+
+                  />
+
+                  <b>seg</b>
+
+                </div>
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Estado inicial</span>
+
+                <select id="auctionStatus" name="auctionStatus">
+
+                  <option value="programada">Programada</option>
+
+                  <option value="en_vivo">En vivo</option>
+
+                </select>
+
+              </label>
+
+ 
+
+            </div>
+
+          </div>
+
+ 
+
+ 
+
+          <div class="admin-form-section">
+
+            <div class="admin-form-section-title">
+
+              <strong>Fecha y hora</strong>
+
+              <small>El reloj público contará hasta este momento.</small>
+
+            </div>
+
+ 
+
+            <div class="admin-form-grid">
+
+ 
+
+              <label>
+
+                <span>Fecha de inicio</span>
+
+                <input
+
+                  id="auctionStartDate"
+
+                  name="auctionStartDate"
+
+                  type="date"
+
+                  required
+
+                />
+
+              </label>
+
+ 
+
+              <label>
+
+                <span>Hora de inicio</span>
+
+                <input
+
+                  id="auctionStartTime"
+
+                  name="auctionStartTime"
+
+                  type="time"
+
+                  required
+
+                />
+
+              </label>
+
+ 
+
+            </div>
+
+          </div>
+
+ 
+
+ 
+
+          <div class="admin-form-section">
+
+            <div class="admin-form-section-title">
+
+              <strong>Ubicación y descripción</strong>
+
+              <small>Datos adicionales para el anuncio.</small>
+
+            </div>
+
+ 
+
+            <div class="admin-form-grid">
+
+ 
+
+              <label class="admin-form-full">
+
+                <span>Ubicación</span>
+
+                <input
+
+                  id="auctionLocation"
+
+                  name="auctionLocation"
+
+                  type="text"
+
+                  placeholder="Ej. Naucalpan, Estado de México"
+
+                />
+
+              </label>
+
+ 
+
+              <label class="admin-form-full">
+
+                <span>Descripción</span>
+
+                <textarea
+
+                  id="auctionDescription"
+
+                  name="auctionDescription"
+
+                  rows="5"
+
+                  placeholder="Describe estado, condiciones, documentación, detalles importantes, etc."
+
+                ></textarea>
+
+              </label>
+
+ 
+
+            </div>
+
+          </div>
+
+ 
+
+ 
+
+          <div class="admin-form-section">
+
+            <div class="admin-form-section-title">
+
+              <strong>Fotos</strong>
+
+              <small>Selecciona portada y galería. La subida se conectará al almacenamiento de imágenes en el siguiente paso.</small>
+
+            </div>
+
+ 
+
+            <label class="admin-upload-box">
+
+              <input
+
+                id="auctionPhotos"
+
+                name="auctionPhotos"
+
+                type="file"
+
+                accept="image/*"
+
+                multiple
+
+              />
+
+              <span class="admin-upload-icon">📷</span>
+
+              <strong>SELECCIONAR FOTOS</strong>
+
+              <small id="auctionPhotosLabel">Puedes elegir varias imágenes.</small>
+
+            </label>
+
+ 
+
+            <div id="auctionPhotoPreview" class="admin-photo-preview"></div>
+
+          </div>
+
+ 
+
+ 
+
+          <div id="auctionFormMessage" class="admin-message" hidden></div>
+
+ 
+
+        </div>
+
+ 
+
+ 
+
+        <div class="admin-modal-footer">
+
+ 
+
+          <button
+
+            id="cancelAuctionButton"
+
+            class="admin-btn admin-btn-dark"
+
+            type="button"
+
+          >
+
+            CANCELAR
+
+          </button>
+
+ 
+
+          <button
+
+            id="saveAuctionButton"
+
+            class="admin-btn admin-btn-red"
+
+            type="submit"
+
+          >
+
+            CREAR SUBASTA
+
+          </button>
+
+ 
+
+        </div>
+
+ 
+
+      </form>
+
+ 
+
+    </div>
 
  
 
