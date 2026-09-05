@@ -6,7 +6,14 @@ import {
 
 import {
   doc,
-  getDoc
+  getDoc,
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+  runTransaction,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 
@@ -518,11 +525,25 @@ setInterval(
 );
 
 
+/* =====================================================
+   SUBASTA EN FIRESTORE
+===================================================== */
+
+const subastaActualId="SF-10048";
+
+const subastaRef=
+  doc(
+    db,
+    "subastas",
+    subastaActualId
+  );
+
+
 let currentBid=42500;
 let bidCount=20;
-
-
-const minIncrement=500;
+let minIncrement=500;
+let subastaExiste=false;
+let estadoSubasta="en_vivo";
 
 
 function renderBid(){
@@ -545,6 +566,234 @@ function renderBid(){
       bidCount;
 
 }
+
+
+/* =====================================================
+   ESCUCHAR SUBASTA EN TIEMPO REAL
+===================================================== */
+
+onSnapshot(
+  subastaRef,
+  (snapshot)=>{
+
+    if(!snapshot.exists()){
+
+      subastaExiste=false;
+
+      console.warn(
+        "La subasta SF-10048 todavía no existe en Firestore."
+      );
+
+      return;
+
+    }
+
+
+    subastaExiste=true;
+
+
+    const datos=
+      snapshot.data();
+
+
+    if(
+      typeof datos.pujaActual==="number"
+    ){
+
+      currentBid=
+        datos.pujaActual;
+
+    }
+
+
+    if(
+      typeof datos.totalPujas==="number"
+    ){
+
+      bidCount=
+        datos.totalPujas;
+
+    }
+
+
+    if(
+      typeof datos.incrementoMinimo==="number"
+    ){
+
+      minIncrement=
+        datos.incrementoMinimo;
+
+    }
+
+
+    if(
+      typeof datos.estado==="string"
+    ){
+
+      estadoSubasta=
+        datos.estado;
+
+    }
+
+
+    renderBid();
+
+
+    const bidButton=
+      document.getElementById("bidButton");
+
+
+    if(
+      bidButton &&
+      estadoSubasta==="finalizada"
+    ){
+
+      bidButton.disabled=true;
+
+      bidButton.textContent=
+        "SUBASTA FINALIZADA";
+
+    }
+
+  },
+  (error)=>{
+
+    console.error(
+      "Error escuchando la subasta:",
+      error
+    );
+
+  }
+);
+
+
+/* =====================================================
+   HISTORIAL DE PUJAS EN TIEMPO REAL
+===================================================== */
+
+const historialQuery=
+  query(
+    collection(
+      db,
+      "subastas",
+      subastaActualId,
+      "pujas"
+    ),
+    orderBy(
+      "fecha",
+      "desc"
+    ),
+    limit(5)
+  );
+
+
+onSnapshot(
+  historialQuery,
+  (snapshot)=>{
+
+    if(snapshot.empty){
+      return;
+    }
+
+
+    const history=
+      document.getElementById("bidHistory");
+
+
+    if(!history){
+      return;
+    }
+
+
+    history.innerHTML="";
+
+
+    snapshot.docs.forEach(
+      (documento,index)=>{
+
+        const datos=
+          documento.data();
+
+
+        let hora="--:--:--";
+
+
+        if(
+          datos.fecha &&
+          typeof datos.fecha.toDate==="function"
+        ){
+
+          hora=
+            datos.fecha
+              .toDate()
+              .toLocaleTimeString(
+                "es-MX",
+                {
+                  hour:"2-digit",
+                  minute:"2-digit",
+                  second:"2-digit"
+                }
+              );
+
+        }
+
+
+        const row=
+          document.createElement("div");
+
+
+        const posicion=
+          document.createElement("span");
+
+        posicion.textContent=
+          index+1;
+
+
+        const usuario=
+          document.createElement("span");
+
+        usuario.textContent=
+          datos.nombre ||
+          "Usuario";
+
+
+        const monto=
+          document.createElement("strong");
+
+        monto.textContent=
+          currency.format(
+            Number(datos.monto) || 0
+          );
+
+
+        const fecha=
+          document.createElement("small");
+
+        fecha.textContent=
+          hora;
+
+
+        row.appendChild(posicion);
+        row.appendChild(usuario);
+        row.appendChild(monto);
+        row.appendChild(fecha);
+
+
+        history.appendChild(row);
+
+      }
+    );
+
+  },
+  (error)=>{
+
+    console.error(
+      "Error escuchando historial de pujas:",
+      error
+    );
+
+  }
+);
 
 
 /* =====================================================
@@ -649,7 +898,35 @@ document
 
 
     /* ---------------------------------------------
-       5. USUARIO AUTORIZADO
+       5. COMPROBAR SUBASTA
+    --------------------------------------------- */
+
+    if(!subastaExiste){
+
+      message.hidden=false;
+
+      message.textContent=
+        "La subasta todavía no está configurada en Firebase.";
+
+      return;
+
+    }
+
+
+    if(estadoSubasta!=="en_vivo"){
+
+      message.hidden=false;
+
+      message.textContent=
+        "Esta subasta no está disponible para recibir pujas.";
+
+      return;
+
+    }
+
+
+    /* ---------------------------------------------
+       6. VALIDAR MONTO
     --------------------------------------------- */
 
     const input=
@@ -687,32 +964,18 @@ document
     }
 
 
-    currentBid=value;
+    /* ---------------------------------------------
+       7. REGISTRAR PUJA REAL
+    --------------------------------------------- */
 
-    bidCount++;
-
-
-    renderBid();
-
-
-    const now=
-      new Date()
-        .toLocaleTimeString(
-          "es-MX",
-          {
-            hour:"2-digit",
-            minute:"2-digit",
-            second:"2-digit"
-          }
-        );
+    const bidButton=
+      document.getElementById("bidButton");
 
 
-    const history=
-      document.getElementById("bidHistory");
+    bidButton.disabled=true;
 
-
-    const row=
-      document.createElement("div");
+    bidButton.textContent=
+      "REGISTRANDO PUJA...";
 
 
     const nombreUsuario=
@@ -721,42 +984,214 @@ document
       "Usuario";
 
 
-    row.innerHTML=
-      `
-      <span>1</span>
-      <span>${nombreUsuario}</span>
-      <strong>${currency.format(currentBid)}</strong>
-      <small>${now}</small>
-      `;
+    try{
+
+      await runTransaction(
+        db,
+        async(transaction)=>{
 
 
-    history.prepend(row);
+          const subastaSnapshot=
+            await transaction.get(
+              subastaRef
+            );
 
 
-    [...history.children].forEach(
-      (item,index)=>
+          if(!subastaSnapshot.exists()){
 
-        item.children[0].textContent=
-          index+1
+            throw new Error(
+              "subasta-no-existe"
+            );
 
-    );
+          }
 
 
-    while(
-      history.children.length>5
-    ){
+          const datosSubasta=
+            subastaSnapshot.data();
 
-      history
-        .lastElementChild
-        .remove();
+
+          if(
+            datosSubasta.estado!=="en_vivo"
+          ){
+
+            throw new Error(
+              "subasta-no-disponible"
+            );
+
+          }
+
+
+          const pujaActualRemota=
+            Number(
+              datosSubasta.pujaActual
+            ) || 0;
+
+
+          const incrementoRemoto=
+            Number(
+              datosSubasta.incrementoMinimo
+            ) || 500;
+
+
+          const minimoPermitido=
+            pujaActualRemota+
+            incrementoRemoto;
+
+
+          if(
+            value<minimoPermitido
+          ){
+
+            throw new Error(
+              `puja-minima:${minimoPermitido}`
+            );
+
+          }
+
+
+          const totalPujasActual=
+            Number(
+              datosSubasta.totalPujas
+            ) || 0;
+
+
+          const nuevaPujaRef=
+            doc(
+              collection(
+                db,
+                "subastas",
+                subastaActualId,
+                "pujas"
+              )
+            );
+
+
+          transaction.update(
+            subastaRef,
+            {
+
+              pujaActual:value,
+
+              totalPujas:
+                totalPujasActual+1,
+
+              ultimaPujaUid:
+                usuarioActual.uid,
+
+              ultimaPujaNombre:
+                nombreUsuario,
+
+              ultimaPujaFecha:
+                serverTimestamp()
+
+            }
+          );
+
+
+          transaction.set(
+            nuevaPujaRef,
+            {
+
+              uid:
+                usuarioActual.uid,
+
+              nombre:
+                nombreUsuario,
+
+              monto:
+                value,
+
+              fecha:
+                serverTimestamp()
+
+            }
+          );
+
+        }
+      );
+
+
+      message.hidden=false;
+
+      message.textContent=
+        `Puja registrada por ${currency.format(value)}.`;
+
+
+    }catch(error){
+
+      console.error(
+        "Error registrando puja:",
+        error
+      );
+
+
+      message.hidden=false;
+
+
+      if(
+        error.message.startsWith(
+          "puja-minima:"
+        )
+      ){
+
+        const minimo=
+          Number(
+            error.message.split(":")[1]
+          );
+
+
+        message.textContent=
+          `Alguien acaba de superar la puja. La nueva puja mínima es ${currency.format(minimo)}.`;
+
+
+      }else if(
+        error.message===
+        "subasta-no-existe"
+      ){
+
+        message.textContent=
+          "La subasta no existe en Firebase.";
+
+
+      }else if(
+        error.message===
+        "subasta-no-disponible"
+      ){
+
+        message.textContent=
+          "Esta subasta ya no está disponible para recibir pujas.";
+
+
+      }else if(
+        error.code===
+        "permission-denied"
+      ){
+
+        message.textContent=
+          "Firebase no permitió registrar la puja.";
+
+
+      }else{
+
+        message.textContent=
+          "No se pudo registrar la puja. Intenta nuevamente.";
+
+      }
+
+    }finally{
+
+      if(
+        estadoSubasta==="en_vivo"
+      ){
+
+        bidButton.disabled=false;
+
+        bidButton.textContent=
+          "🔨 PUJAR AHORA";
+
+      }
 
     }
-
-
-    message.hidden=false;
-
-    message.textContent=
-      `Puja registrada por ${currency.format(currentBid)}.`;
 
   });
 
