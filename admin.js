@@ -66,6 +66,29 @@ const auctionDescription = document.getElementById("auctionDescription");
 const auctionPhotos = document.getElementById("auctionPhotos");
 const auctionPhotosLabel = document.getElementById("auctionPhotosLabel");
 const auctionPhotoPreview = document.getElementById("auctionPhotoPreview");
+const auctionVideos = document.getElementById("auctionVideos");
+const auctionVideosLabel = document.getElementById("auctionVideosLabel");
+const auctionVideoPreview = document.getElementById("auctionVideoPreview");
+const auctionVin = document.getElementById("auctionVin");
+const auctionPlates = document.getElementById("auctionPlates");
+const auctionMileage = document.getElementById("auctionMileage");
+const auctionTransmission = document.getElementById("auctionTransmission");
+const auctionFuel = document.getElementById("auctionFuel");
+const auctionColor = document.getElementById("auctionColor");
+const auctionHasKeys = document.getElementById("auctionHasKeys");
+const auctionKeyCount = document.getElementById("auctionKeyCount");
+const auctionInvoiceType = document.getElementById("auctionInvoiceType");
+const auctionRegistrationCard = document.getElementById("auctionRegistrationCard");
+const auctionDocuments = document.getElementById("auctionDocuments");
+const auctionCondition = document.getElementById("auctionCondition");
+const auctionStarts = document.getElementById("auctionStarts");
+const auctionBodyDamage = document.getElementById("auctionBodyDamage");
+const auctionMechanicalDamage = document.getElementById("auctionMechanicalDamage");
+const auctionDamageNotes = document.getElementById("auctionDamageNotes");
+const CLOUDINARY_CLOUD_NAME = "vobmt656";
+const CLOUDINARY_UPLOAD_PRESET = "subastando_fierros";
+const MAX_FOTOS = 20;
+const MAX_VIDEOS = 5;
 /* =====================================================
    ESTADO
 ===================================================== */
@@ -744,28 +767,120 @@ document.addEventListener("keydown", (event) => {
   }
 });
 /* =====================================================
-   PREVISUALIZACIÓN DE FOTOS
+   PREVISUALIZACIÓN DE FOTOS Y VIDEOS
 ===================================================== */
+function actualizarMensajeFormulario(texto, tipo = "info") {
+  if (!auctionFormMessage) return;
+  auctionFormMessage.hidden = false;
+  auctionFormMessage.textContent = texto;
+  auctionFormMessage.dataset.type = tipo;
+}
+function limpiarMensajeFormulario() {
+  if (!auctionFormMessage) return;
+  auctionFormMessage.hidden = true;
+  auctionFormMessage.textContent = "";
+  delete auctionFormMessage.dataset.type;
+}
+function archivosSeleccionados(input, maximo) {
+  return Array.from(input?.files || []).slice(0, maximo);
+}
 if (auctionPhotos) {
   auctionPhotos.addEventListener("change", () => {
-    const archivos = Array.from(auctionPhotos.files || []);
+    const todos = Array.from(auctionPhotos.files || []);
+    if (todos.length > MAX_FOTOS) {
+      alert(`Puedes subir máximo ${MAX_FOTOS} fotos por subasta.`);
+      auctionPhotos.value = "";
+    }
+    const archivos = archivosSeleccionados(auctionPhotos, MAX_FOTOS);
     if (auctionPhotosLabel) {
-      auctionPhotosLabel.textContent =
-        archivos.length === 0
-          ? "Puedes elegir varias imágenes."
-          : `${archivos.length} foto(s) seleccionada(s).`;
+      auctionPhotosLabel.textContent = archivos.length === 0
+        ? `Puedes elegir hasta ${MAX_FOTOS} imágenes.`
+        : `${archivos.length} foto(s) seleccionada(s). La primera será la portada.`;
     }
     if (!auctionPhotoPreview) return;
     auctionPhotoPreview.innerHTML = "";
-    archivos.slice(0, 8).forEach((archivo) => {
+    archivos.forEach((archivo, indice) => {
       const url = URL.createObjectURL(archivo);
+      const contenedor = document.createElement("div");
+      contenedor.style.position = "relative";
       const img = document.createElement("img");
       img.src = url;
       img.alt = archivo.name;
       img.onload = () => URL.revokeObjectURL(url);
-      auctionPhotoPreview.appendChild(img);
+      contenedor.appendChild(img);
+      if (indice === 0) {
+        const badge = document.createElement("span");
+        badge.textContent = "PORTADA";
+        badge.style.position = "absolute";
+        badge.style.left = "6px";
+        badge.style.bottom = "6px";
+        badge.style.padding = "4px 7px";
+        badge.style.borderRadius = "6px";
+        badge.style.background = "rgba(0,0,0,.78)";
+        badge.style.color = "#fff";
+        badge.style.fontSize = "9px";
+        badge.style.fontWeight = "900";
+        contenedor.appendChild(badge);
+      }
+      auctionPhotoPreview.appendChild(contenedor);
     });
   });
+}
+if (auctionVideos) {
+  auctionVideos.addEventListener("change", () => {
+    const todos = Array.from(auctionVideos.files || []);
+    if (todos.length > MAX_VIDEOS) {
+      alert(`Puedes subir máximo ${MAX_VIDEOS} videos por subasta.`);
+      auctionVideos.value = "";
+    }
+    const archivos = archivosSeleccionados(auctionVideos, MAX_VIDEOS);
+    if (auctionVideosLabel) {
+      auctionVideosLabel.textContent = archivos.length === 0
+        ? `Puedes elegir hasta ${MAX_VIDEOS} videos.`
+        : `${archivos.length} video(s) seleccionado(s).`;
+    }
+    if (!auctionVideoPreview) return;
+    auctionVideoPreview.innerHTML = "";
+    archivos.forEach((archivo) => {
+      const url = URL.createObjectURL(archivo);
+      const video = document.createElement("video");
+      video.src = url;
+      video.controls = true;
+      video.muted = true;
+      video.preload = "metadata";
+      video.style.width = "100%";
+      video.style.maxHeight = "180px";
+      video.style.objectFit = "cover";
+      video.style.borderRadius = "10px";
+      video.onloadedmetadata = () => URL.revokeObjectURL(url);
+      auctionVideoPreview.appendChild(video);
+    });
+  });
+}
+async function subirArchivoCloudinary(archivo, tipo = "image") {
+  const resourceType = tipo === "video" ? "video" : "image";
+  const endpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+  const formData = new FormData();
+  formData.append("file", archivo);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  const respuesta = await fetch(endpoint, { method: "POST", body: formData });
+  const data = await respuesta.json();
+  if (!respuesta.ok || !data.secure_url) {
+    console.error("Error Cloudinary:", data);
+    const detalle = data?.error?.message || "No se pudo subir el archivo a Cloudinary.";
+    throw new Error(`CLOUDINARY: ${detalle}`);
+  }
+  return data.secure_url;
+}
+async function subirArchivosCloudinary(archivos, tipo, inicio, total) {
+  const urls = [];
+  for (let i = 0; i < archivos.length; i += 1) {
+    const numero = inicio + i + 1;
+    actualizarMensajeFormulario(`Subiendo archivo ${numero} de ${total}...`);
+    const url = await subirArchivoCloudinary(archivos[i], tipo);
+    urls.push(url);
+  }
+  return urls;
 }
 /* =====================================================
    CREAR SUBASTA EN FIRESTORE
@@ -785,6 +900,8 @@ if (auctionForm) {
     const duracionRonda = Number(auctionRoundDuration?.value || 0);
     const fecha = String(auctionStartDate?.value || "");
     const hora = String(auctionStartTime?.value || "");
+    const fotosSeleccionadas = archivosSeleccionados(auctionPhotos, MAX_FOTOS);
+    const videosSeleccionados = archivosSeleccionados(auctionVideos, MAX_VIDEOS);
     if (!id || !marca || !modelo || !fecha || !hora) {
       alert("Completa los campos obligatorios.");
       return;
@@ -808,24 +925,52 @@ if (auctionForm) {
     }
     if (saveAuctionButton) {
       saveAuctionButton.disabled = true;
-      saveAuctionButton.textContent = "CREANDO...";
+      saveAuctionButton.textContent = "SUBIENDO...";
     }
+    limpiarMensajeFormulario();
     try {
       const referencia = doc(db, "subastas", id);
       const existe = await getDoc(referencia);
-      if (existe.exists()) {
-        throw new Error("YA_EXISTE");
+      if (existe.exists()) throw new Error("YA_EXISTE");
+      const totalArchivos = fotosSeleccionadas.length + videosSeleccionados.length;
+      let fotos = [];
+      let videos = [];
+      if (fotosSeleccionadas.length) {
+        fotos = await subirArchivosCloudinary(fotosSeleccionadas, "image", 0, totalArchivos);
       }
+      if (videosSeleccionados.length) {
+        videos = await subirArchivosCloudinary(
+          videosSeleccionados,
+          "video",
+          fotosSeleccionadas.length,
+          totalArchivos
+        );
+      }
+      if (saveAuctionButton) saveAuctionButton.textContent = "CREANDO...";
+      actualizarMensajeFormulario("Guardando subasta en Firebase...");
       await setDoc(referencia, {
         id,
         categoria: String(auctionCategory?.value || "vehiculo"),
         marca,
         modelo,
-        anio:
-          auctionYear?.value
-            ? Number(auctionYear.value)
-            : null,
+        anio: auctionYear?.value ? Number(auctionYear.value) : null,
         version: String(auctionVersion?.value || "").trim(),
+        vin: String(auctionVin?.value || "").trim().toUpperCase(),
+        placas: String(auctionPlates?.value || "").trim().toUpperCase(),
+        kilometraje: auctionMileage?.value ? Number(auctionMileage.value) : null,
+        transmision: String(auctionTransmission?.value || "").trim(),
+        combustible: String(auctionFuel?.value || "").trim(),
+        color: String(auctionColor?.value || "").trim(),
+        tieneLlaves: String(auctionHasKeys?.value || "si") === "si",
+        cantidadLlaves: auctionKeyCount?.value ? Number(auctionKeyCount.value) : 0,
+        tipoFactura: String(auctionInvoiceType?.value || "").trim(),
+        tarjetaCirculacion: String(auctionRegistrationCard?.value || "por_confirmar"),
+        documentos: String(auctionDocuments?.value || "").trim(),
+        condicion: String(auctionCondition?.value || "Usado").trim(),
+        enciende: String(auctionStarts?.value || "por_confirmar"),
+        danosEsteticos: String(auctionBodyDamage?.value || "").trim(),
+        danosMecanicos: String(auctionMechanicalDamage?.value || "").trim(),
+        observaciones: String(auctionDamageNotes?.value || "").trim(),
         ubicacion: String(auctionLocation?.value || "").trim(),
         descripcion: String(auctionDescription?.value || "").trim(),
         precioInicial,
@@ -838,45 +983,33 @@ if (auctionForm) {
         ultimaPujaUid: "",
         ultimaPujaNombre: "",
         ultimaPujaFecha: null,
-        fotos: [],
+        fotos,
+        fotoPortada: fotos[0] || "",
+        videos,
         creadoPorUid: usuarioAdminActual.uid,
-        creadoPorCorreo:
-          perfilAdminActual?.correo ||
-          usuarioAdminActual.email ||
-          "",
+        creadoPorCorreo: perfilAdminActual?.correo || usuarioAdminActual.email || "",
         creadoEn: serverTimestamp(),
         actualizadoEn: serverTimestamp()
       });
-      if (auctionFormMessage) {
-        auctionFormMessage.hidden = false;
-        auctionFormMessage.textContent =
-          `Subasta ${id} creada correctamente.`;
-      }
+      actualizarMensajeFormulario(`Subasta ${id} creada correctamente.`, "success");
       auctionForm.reset();
-      if (auctionMinIncrement) {
-        auctionMinIncrement.value = "500";
-      }
-      if (auctionRoundDuration) {
-        auctionRoundDuration.value = "120";
-      }
-      if (auctionPhotosLabel) {
-        auctionPhotosLabel.textContent =
-          "Puedes elegir varias imágenes.";
-      }
-      if (auctionPhotoPreview) {
-        auctionPhotoPreview.innerHTML = "";
-      }
-      setTimeout(() => {
-        cerrarModalSubasta();
-      }, 700);
+      if (auctionMinIncrement) auctionMinIncrement.value = "500";
+      if (auctionRoundDuration) auctionRoundDuration.value = "120";
+      if (auctionKeyCount) auctionKeyCount.value = "1";
+      if (auctionPhotosLabel) auctionPhotosLabel.textContent = `Puedes elegir hasta ${MAX_FOTOS} imágenes.`;
+      if (auctionVideosLabel) auctionVideosLabel.textContent = `Puedes elegir hasta ${MAX_VIDEOS} videos.`;
+      if (auctionPhotoPreview) auctionPhotoPreview.innerHTML = "";
+      if (auctionVideoPreview) auctionVideoPreview.innerHTML = "";
+      setTimeout(() => cerrarModalSubasta(), 900);
     } catch (error) {
       console.error("Error creando subasta:", error);
       if (error.message === "YA_EXISTE") {
         alert("Ya existe una subasta con ese ID / lote.");
+      } else if (String(error.message || "").startsWith("CLOUDINARY:")) {
+        alert(`No se pudo subir una foto o video. ${String(error.message).replace("CLOUDINARY:", "").trim()}`);
+        actualizarMensajeFormulario("Falló la subida de un archivo. La subasta no fue creada.", "error");
       } else if (error.code === "permission-denied") {
-        alert(
-          "Firebase bloqueó la creación. Falta publicar las reglas de administrador para subastas."
-        );
+        alert("Firebase bloqueó la creación. Revisa las reglas de administrador para subastas.");
       } else {
         alert("No se pudo crear la subasta.");
       }
