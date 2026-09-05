@@ -36,81 +36,429 @@ import {
 
  
 
-const auctions=[
+/* =====================================================
 
-  {
+   SUBASTAS PÚBLICAS DESDE FIRESTORE
 
-    id:"aveo-2018",
+   - El admin crea la subasta.
 
-    category:"autos",
+   - Si está "programada", aparece automáticamente
 
-    name:"CHEVROLET AVEO",
+     en PRÓXIMAS SUBASTAS.
 
-    year:"2018 | LT",
+   - No se toca la subasta EN VIVO SF-10048 de arriba.
 
-    image:"https://res.cloudinary.com/vobmt656/image/upload/v1787728525/144720522-el-fondo-de-noticias-es-perfecto-para-cualquier-tipo-de-presentaci%C3%B3n-de-noticias-o-informaci%C3%B3n-el-fo.webp",
+===================================================== */
 
-    date:"25 May 2026 · 11:00 AM",
+ 
 
-    price:38000
+let auctions=[];
 
-  },
+ 
 
-  {
+const defaultAuctionImage=
 
-    id:"jetta-2016",
+  "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80";
 
-    category:"autos",
+ 
 
-    name:"VOLKSWAGEN JETTA",
+function normalizarCategoriaSubasta(valor){
 
-    year:"2016 | Trendline",
+ 
 
-    image:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80",
+  const categoria=
 
-    date:"25 May 2026 · 02:00 PM",
+    String(valor || "")
 
-    price:52000
+      .trim()
 
-  },
+      .toLowerCase();
 
-  {
+ 
 
-    id:"mazda-3-2017",
+  if(
 
-    category:"autos",
+    categoria==="vehiculo" ||
 
-    name:"MAZDA 3",
+    categoria==="auto" ||
 
-    year:"2017 | i Sport",
+    categoria==="autos"
 
-    image:"https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80",
+  ){
 
-    date:"26 May 2026 · 11:00 AM",
-
-    price:59000
-
-  },
-
-  {
-
-    id:"honda-civic-2015",
-
-    category:"autos",
-
-    name:"HONDA CIVIC",
-
-    year:"2015 | EX",
-
-    image:"https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=900&q=80",
-
-    date:"26 May 2026 · 02:00 PM",
-
-    price:63000
+    return "autos";
 
   }
 
-];
+ 
+
+  if(
+
+    categoria==="moto" ||
+
+    categoria==="motos"
+
+  ){
+
+    return "motos";
+
+  }
+
+ 
+
+  if(
+
+    categoria==="maquinaria" ||
+
+    categoria==="herramientas"
+
+  ){
+
+    return "herramientas";
+
+  }
+
+ 
+
+  return "otros";
+
+}
+
+ 
+
+ 
+
+function fechaSubastaMs(subasta){
+
+ 
+
+  if(
+
+    subasta.fechaInicio &&
+
+    typeof subasta.fechaInicio.toMillis==="function"
+
+  ){
+
+    return subasta.fechaInicio.toMillis();
+
+  }
+
+ 
+
+  return 0;
+
+}
+
+ 
+
+ 
+
+function formatearFechaSubasta(fechaInicio){
+
+ 
+
+  if(
+
+    !fechaInicio ||
+
+    typeof fechaInicio.toDate!=="function"
+
+  ){
+
+    return "Fecha por confirmar";
+
+  }
+
+ 
+
+  return fechaInicio
+
+    .toDate()
+
+    .toLocaleString(
+
+      "es-MX",
+
+      {
+
+        dateStyle:"medium",
+
+        timeStyle:"short"
+
+      }
+
+    );
+
+}
+
+ 
+
+ 
+
+function tiempoHastaSubasta(fechaMs){
+
+ 
+
+  if(!fechaMs){
+
+    return "Fecha por confirmar";
+
+  }
+
+ 
+
+  const diferencia=
+
+    fechaMs-Date.now();
+
+ 
+
+  if(diferencia<=0){
+
+    return "Iniciando...";
+
+  }
+
+ 
+
+  const segundos=
+
+    Math.floor(diferencia/1000);
+
+ 
+
+  const dias=
+
+    Math.floor(segundos/86400);
+
+ 
+
+  const horas=
+
+    Math.floor(
+
+      (segundos%86400)/3600
+
+    );
+
+ 
+
+  const minutos=
+
+    Math.floor(
+
+      (segundos%3600)/60
+
+    );
+
+ 
+
+  const seg=
+
+    segundos%60;
+
+ 
+
+  if(dias>0){
+
+    return `${dias}d ${String(horas).padStart(2,"0")}h ${String(minutos).padStart(2,"0")}m`;
+
+  }
+
+ 
+
+  return `${String(horas).padStart(2,"0")}:${String(minutos).padStart(2,"0")}:${String(seg).padStart(2,"0")}`;
+
+}
+
+ 
+
+ 
+
+function cargarSubastasPublicas(){
+
+ 
+
+  onSnapshot(
+
+    collection(db,"subastas"),
+
+    (snapshot)=>{
+
+ 
+
+      auctions=
+
+        snapshot.docs
+
+          .map(documento=>{
+
+ 
+
+            const datos=
+
+              documento.data();
+
+ 
+
+            const fechaMs=
+
+              fechaSubastaMs(datos);
+
+ 
+
+            const fotos=
+
+              Array.isArray(datos.fotos)
+
+                ? datos.fotos
+
+                : [];
+
+ 
+
+            return {
+
+              id:documento.id,
+
+              category:
+
+                normalizarCategoriaSubasta(
+
+                  datos.categoria
+
+                ),
+
+              name:
+
+                `${datos.marca || ""} ${datos.modelo || ""}`
+
+                  .trim()
+
+                  .toUpperCase() ||
+
+                documento.id,
+
+              year:
+
+                [
+
+                  datos.anio || "",
+
+                  datos.version || ""
+
+                ]
+
+                  .filter(Boolean)
+
+                  .join(" | "),
+
+              image:
+
+                fotos[0] ||
+
+                datos.imagenPortada ||
+
+                defaultAuctionImage,
+
+              date:
+
+                formatearFechaSubasta(
+
+                  datos.fechaInicio
+
+                ),
+
+              dateMs:fechaMs,
+
+              price:
+
+                Number(
+
+                  datos.precioInicial ??
+
+                  datos.pujaActual ??
+
+                  0
+
+                ),
+
+              estado:
+
+                String(
+
+                  datos.estado || ""
+
+                )
+
+            };
+
+ 
+
+          })
+
+          .filter(subasta=>
+
+            subasta.estado==="programada"
+
+          )
+
+          .sort(
+
+            (a,b)=>
+
+              (a.dateMs || Infinity)-
+
+              (b.dateMs || Infinity)
+
+          );
+
+ 
+
+      renderAuctionList(
+
+        activeCategory
+
+      );
+
+ 
+
+    },
+
+    (error)=>{
+
+ 
+
+      console.error(
+
+        "Error cargando subastas públicas:",
+
+        error
+
+      );
+
+ 
+
+      auctions=[];
+
+ 
+
+      renderAuctionList(
+
+        activeCategory
+
+      );
+
+ 
+
+    }
+
+  );
+
+ 
+
+}
 
  
 
@@ -332,6 +680,8 @@ function renderAuctionList(category=activeCategory){
 
       data-category="${i.category}"
 
+      data-start-ms="${i.dateMs || ""}"
+
       tabindex="0"
 
       role="link"
@@ -400,7 +750,31 @@ function renderAuctionList(category=activeCategory){
 
           <span>
 
-            🕐 ${i.date}
+            🕐 <strong class="auction-card-countdown">${tiempoHastaSubasta(i.dateMs)}</strong>
+
+          </span>
+
+ 
+
+        </div>
+
+ 
+
+        <div class="row">
+
+ 
+
+          <span>
+
+            Fecha:
+
+          </span>
+
+ 
+
+          <span>
+
+            ${i.date}
 
           </span>
 
@@ -532,7 +906,7 @@ function renderAuctionList(category=activeCategory){
 
  
 
-renderAuctionList();
+cargarSubastasPublicas();
 
  
 
@@ -643,6 +1017,78 @@ document
  
 
   });
+
+ 
+
+ 
+
+function actualizarRelojesTarjetas(){
+
+ 
+
+  document
+
+    .querySelectorAll(".auction-card")
+
+    .forEach(card=>{
+
+ 
+
+      const reloj=
+
+        card.querySelector(
+
+          ".auction-card-countdown"
+
+        );
+
+ 
+
+      if(!reloj){
+
+        return;
+
+      }
+
+ 
+
+      const fechaMs=
+
+        Number(
+
+          card.dataset.startMs || 0
+
+        );
+
+ 
+
+      reloj.textContent=
+
+        tiempoHastaSubasta(
+
+          fechaMs
+
+        );
+
+ 
+
+    });
+
+ 
+
+}
+
+ 
+
+ 
+
+setInterval(
+
+  actualizarRelojesTarjetas,
+
+  1000
+
+);
 
  
 
