@@ -2,16 +2,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/fireba
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDFgD68pJ97orxJIFqgiyfItE3hCZpD84c",
-    authDomain: "subastando-fierros.firebaseapp.com",
-    projectId: "subastando-fierros",
-    storageBucket: "subastando-fierros.firebasestorage.app",
-    messagingSenderId: "808911293811",
-    appId: "1:808911293811:web:0e44f5fdc9e6e497fd0906",
-    measurementId: "G-FTVHCBBM0N"
+  const firebaseConfig = {
+    apiKey: "AIzaSyCX-OK-xJiAd_Wr7l8Jcwrl7840Q6l-2B4",
+    authDomain: "subastando-fierros-b5871.firebaseapp.com",
+    projectId: "subastando-fierros-b5871",
+    storageBucket: "subastando-fierros-b5871.firebasestorage.app",
+    messagingSenderId: "6542922681",
+    appId: "1:6542922681:web:881697e0a6a38f312e1c68"
   };
-
 
 const app = initializeApp(firebaseConfig);
 
