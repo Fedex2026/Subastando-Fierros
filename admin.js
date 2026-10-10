@@ -1,344 +1,894 @@
 
-/* ============================================
-   SUBASTANDO FIERROS
-   CIERRE DE SUBASTAS Y GANADORES
-   PEGAR AL FINAL DE admin.js
-============================================ */
+import { auth, db } from "./firebase-config.js";
 
-const cierresEnProcesoSF = new Set();
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
-function fechaMsSF(valor) {
-  if (valor?.toMillis) return valor.toMillis();
-  if (typeof valor?.seconds === "number") {
-    return valor.seconds * 1000;
-  }
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+  setDoc,
+  serverTimestamp,
+  Timestamp,
+  runTransaction
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+const $ = id => document.getElementById(id);
+
+const CLOUD_NAME = "vobmt656";
+const CLOUD_PRESET = "subastando_fierros";
+
+let usuarioAdminActual = null;
+let perfilAdminActual = null;
+let usuariosCargados = [];
+let subastasCargadas = [];
+let unsubUsuarios = null;
+let unsubSubastas = null;
+let fotos = [];
+let videos = [];
+
+const cierresEnProceso = new Set();
+
+const dinero = n => new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+  maximumFractionDigits: 0
+}).format(Number(n) || 0);
+
+function fechaMs(v) {
+  if (v?.toMillis) return v.toMillis();
+  if (typeof v?.seconds === "number") return v.seconds * 1000;
   return 0;
 }
 
-function limiteSF(subasta) {
-  const inicio = fechaMsSF(subasta.fechaInicio);
-  if (!inicio) return 0;
-
-  const ultima = fechaMsSF(subasta.ultimaPujaFecha);
-  const duracion = Math.max(
-    10,
-    Number(subasta.duracionRonda) || 120
-  );
-
-  return Math.max(inicio, ultima) + duracion * 1000;
+function fechaTexto(v) {
+  const ms = fechaMs(v);
+  return ms ? new Date(ms).toLocaleString("es-MX") : "Sin fecha";
 }
 
-async function cerrarSubastaSF(id) {
-  if (!usuarioAdminActual) return;
-  if (cierresEnProcesoSF.has(id)) return;
+function elemento(tag, texto, clase) {
+  const e = document.createElement(tag);
+  if (texto !== undefined) e.textContent = String(texto);
+  if (clase) e.className = clase;
+  return e;
+}
 
-  cierresEnProcesoSF.add(id);
+function agregarDato(contenedor, etiqueta, valor) {
+  const fila = elemento("div");
+  fila.style.cssText =
+    "display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:10px 0;border-bottom:1px solid #303138";
+
+  const nombre = elemento("span", etiqueta);
+  nombre.style.color = "#aeb0b9";
+
+  const contenido = elemento("strong", valor);
+  fila.append(nombre, contenido);
+  contenedor.append(fila);
+}
+
+function mostrarSeccion(nombre) {
+  document.querySelectorAll(".admin-nav-item").forEach(e => {
+    e.classList.toggle("active", e.dataset.section === nombre);
+  });
+
+  document.querySelectorAll(".admin-section").forEach(e => {
+    e.classList.toggle("active", e.id === `section-${nombre}`);
+  });
+
+  const titulos = {
+    dashboard: ["Dashboard", "Resumen general de Subastando Fierros."],
+    subastas: ["Subastas", "Administra tus subastas."],
+    miembros: ["Miembros", "Control de membresías."],
+    ventas: ["Ganadores / Ventas", "Ganadores, pagos y entregas."],
+    configuracion: ["Configuración", "Configuración de la plataforma."]
+  };
+
+  if (titulos[nombre]) {
+    if ($("adminPageTitle"))
+      $("adminPageTitle").textContent = titulos[nombre][0];
+
+    if ($("adminPageSubtitle"))
+      $("adminPageSubtitle").textContent = titulos[nombre][1];
+  }
+}
+
+document.querySelectorAll(".admin-nav-item").forEach(e => {
+  e.addEventListener("click", () => mostrarSeccion(e.dataset.section));
+});
+
+document.querySelectorAll("[data-go-section]").forEach(e => {
+  e.addEventListener("click", () => mostrarSeccion(e.dataset.goSection));
+});
+
+/* ============================================
+   AUTENTICACIÓN DEL ADMINISTRADOR
+============================================ */
+
+function mostrarAcceso(tipo) {
+  if ($("adminLoading")) $("adminLoading").hidden = true;
+  if ($("adminApp")) $("adminApp").hidden = tipo !== "admin";
+  if ($("adminAccessDenied"))
+    $("adminAccessDenied").hidden = tipo !== "denegado";
+}
+
+onAuthStateChanged(auth, async usuario => {
+  if (unsubUsuarios) {
+    unsubUsuarios();
+    unsubUsuarios = null;
+  }
+
+  if (unsubSubastas) {
+    unsubSubastas();
+    unsubSubastas = null;
+  }
+
+  usuarioAdminActual = null;
+  perfilAdminActual = null;
+
+  if (!usuario) {
+    location.href = "login.html";
+    return;
+  }
 
   try {
-    const referencia = doc(db, "subastas", id);
+    const snap = await getDoc(doc(db, "usuarios", usuario.uid));
 
-    // Se importa aquí para no cambiar los
-    // imports que ya tienes arriba.
-    const { runTransaction } = await import(
-      "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js"
+    if (
+      !snap.exists() ||
+      snap.data().rol !== "admin" ||
+      snap.data().activo !== true
+    ) {
+      mostrarAcceso("denegado");
+      return;
+    }
+
+    usuarioAdminActual = usuario;
+    perfilAdminActual = snap.data();
+
+    if ($("adminUserName"))
+      $("adminUserName").textContent =
+        perfilAdminActual.nombre || "Administrador";
+
+    if ($("adminUserEmail"))
+      $("adminUserEmail").textContent =
+        usuario.email || "";
+
+    mostrarAcceso("admin");
+    escucharUsuarios();
+    escucharSubastas();
+
+  } catch (error) {
+    console.error("Error verificando administrador:", error);
+    mostrarAcceso("denegado");
+  }
+});
+
+$("logoutButton")?.addEventListener("click", async () => {
+  await signOut(auth);
+  location.href = "login.html";
+});
+
+/* ============================================
+   MIEMBROS
+============================================ */
+
+function estadoMiembro(u) {
+  if (u.activo === false) return "SUSPENDIDO";
+
+  if (
+    u.activo === true &&
+    u.membresiaActiva === true &&
+    u.puedePujar === true
+  ) return "ACTIVO";
+
+  return "PENDIENTE";
+}
+
+function escucharUsuarios() {
+  unsubUsuarios = onSnapshot(
+    collection(db, "usuarios"),
+    snapshot => {
+      usuariosCargados = snapshot.docs
+        .map(d => ({ ...d.data(), id: d.id }))
+        .filter(u => u.rol !== "admin");
+
+      renderMiembros();
+      renderPendientes();
+      renderVentas();
+    },
+    error => console.error("Error leyendo miembros:", error)
+  );
+}
+
+function crearBoton(texto, accion) {
+  const boton = elemento("button", texto);
+  boton.type = "button";
+  boton.style.cssText =
+    "padding:10px 15px;border-radius:8px;cursor:pointer;background:#e31b23;color:white;border:0;font-weight:bold";
+  boton.addEventListener("click", accion);
+  return boton;
+}
+
+async function cambiarMiembro(uid, autorizar) {
+  const u = usuariosCargados.find(x => x.id === uid);
+  if (!u) return;
+
+  const verbo = autorizar ? "autorizar" : "suspender";
+
+  if (!confirm(`¿Deseas ${verbo} a ${u.nombre || u.correo}?`))
+    return;
+
+  try {
+    await updateDoc(doc(db, "usuarios", uid), {
+      activo: autorizar,
+      membresiaActiva: autorizar,
+      puedePujar: autorizar,
+      estadoMembresia: autorizar ? "activo" : "suspendida"
+    });
+  } catch (error) {
+    console.error("Error actualizando miembro:", error);
+    alert("Firebase no permitió actualizar al miembro.");
+  }
+}
+
+function renderMiembros() {
+  const contenedor = $("membersAdminList");
+  if (!contenedor) return;
+
+  const busqueda = ($("memberSearch")?.value || "").toLowerCase();
+
+  const miembros = usuariosCargados.filter(u =>
+    `${u.nombre || ""} ${u.correo || ""} ${u.telefono || ""}`
+      .toLowerCase()
+      .includes(busqueda)
+  );
+
+  contenedor.replaceChildren();
+
+  miembros.forEach(u => {
+    const fila = elemento("div");
+    fila.style.cssText =
+      "padding:16px 0;border-bottom:1px solid #303138;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap";
+
+    const datos = elemento("div");
+    datos.append(
+      elemento("strong", u.nombre || "Sin nombre"),
+      elemento("div", u.correo || ""),
+      elemento("small", `${u.telefono || ""} · ${estadoMiembro(u)}`)
     );
 
-    await runTransaction(db, async (tx) => {
-      const snapshot = await tx.get(referencia);
+    const acciones = elemento("div");
+    acciones.style.cssText = "display:flex;gap:8px";
 
-      if (!snapshot.exists()) return;
+    if (estadoMiembro(u) !== "ACTIVO") {
+      acciones.append(crearBoton("AUTORIZAR", () =>
+        cambiarMiembro(u.id, true)
+      ));
+    }
 
-      const subasta = snapshot.data();
+    if (estadoMiembro(u) !== "SUSPENDIDO") {
+      acciones.append(crearBoton("SUSPENDER", () =>
+        cambiarMiembro(u.id, false)
+      ));
+    }
 
-      if (subasta.estado !== "en_vivo") return;
+    fila.append(datos, acciones);
+    contenedor.append(fila);
+  });
 
-      const limite = limiteSF(subasta);
+  if ($("statActiveMembers"))
+    $("statActiveMembers").textContent =
+      usuariosCargados.filter(u => estadoMiembro(u) === "ACTIVO").length;
 
-      if (!limite || Date.now() < limite + 1500) {
-        return;
-      }
+  if ($("statPendingMembers"))
+    $("statPendingMembers").textContent =
+      usuariosCargados.filter(u => estadoMiembro(u) === "PENDIENTE").length;
+}
+
+$("memberSearch")?.addEventListener("input", renderMiembros);
+
+function renderPendientes() {
+  const contenedor = $("dashboardPendingMembers");
+  if (!contenedor) return;
+
+  contenedor.replaceChildren();
+
+  const pendientes = usuariosCargados
+    .filter(u => estadoMiembro(u) === "PENDIENTE")
+    .slice(0, 5);
+
+  if (!pendientes.length) {
+    contenedor.append(elemento("p", "Sin miembros pendientes."));
+    return;
+  }
+
+  pendientes.forEach(u => {
+    const fila = elemento("div");
+    fila.style.cssText =
+      "padding:12px 0;display:flex;justify-content:space-between;gap:10px";
+
+    fila.append(
+      elemento("span", u.nombre || u.correo),
+      crearBoton("AUTORIZAR", () => cambiarMiembro(u.id, true))
+    );
+
+    contenedor.append(fila);
+  });
+}
+
+/* ============================================
+   SUBASTAS
+============================================ */
+
+function escucharSubastas() {
+  unsubSubastas = onSnapshot(
+    collection(db, "subastas"),
+    snapshot => {
+      subastasCargadas = snapshot.docs.map(d => ({
+        ...d.data(),
+        id: d.id
+      }));
+
+      renderSubastas();
+      renderDashboardSubastas();
+      renderVentas();
+      revisarCierres();
+    },
+    error => console.error("Error leyendo subastas:", error)
+  );
+}
+
+function renderSubastas() {
+  const contenedor = $("auctionsAdminList");
+  if (!contenedor) return;
+
+  contenedor.replaceChildren();
+
+  const ordenadas = [...subastasCargadas]
+    .sort((a, b) => fechaMs(b.fechaInicio) - fechaMs(a.fechaInicio));
+
+  if (!ordenadas.length) {
+    contenedor.append(elemento("p", "Todavía no hay subastas."));
+  }
+
+  ordenadas.forEach(s => {
+    const fila = elemento("div");
+    fila.style.cssText =
+      "display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:18px 0;border-bottom:1px solid #303138";
+
+    const datos = elemento("div");
+    datos.append(
+      elemento("strong", `${s.marca || ""} ${s.modelo || ""} ${s.anio || ""}`),
+      elemento("div", s.id),
+      elemento("small", fechaTexto(s.fechaInicio))
+    );
+
+    const precio = elemento("strong", dinero(s.pujaActual ?? s.precioInicial));
+
+    const estado = elemento("strong", String(s.estado || "").toUpperCase());
+    estado.style.color =
+      s.estado === "en_vivo" ? "#24c875" : "#ffb020";
+
+    fila.append(datos, precio, estado);
+    contenedor.append(fila);
+  });
+
+  if ($("statLiveAuctions"))
+    $("statLiveAuctions").textContent =
+      subastasCargadas.filter(s => s.estado === "en_vivo").length;
+
+  if ($("statUpcomingAuctions"))
+    $("statUpcomingAuctions").textContent =
+      subastasCargadas.filter(s =>
+        s.estado === "programada" &&
+        fechaMs(s.fechaInicio) > Date.now()
+      ).length;
+}
+
+function renderDashboardSubastas() {
+  const contenedor = $("dashboardAuctions");
+  if (!contenedor) return;
+
+  contenedor.replaceChildren();
+
+  [...subastasCargadas].slice(-5).reverse().forEach(s => {
+    const fila = elemento("div");
+    fila.style.cssText =
+      "display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #303138";
+
+    fila.append(
+      elemento("strong", `${s.marca || ""} ${s.modelo || ""}`),
+      elemento("span", String(s.estado || "").toUpperCase())
+    );
+
+    contenedor.append(fila);
+  });
+}
+
+/* ============================================
+   CIERRE DE SUBASTAS
+============================================ */
+
+function fechaLimite(s) {
+  const inicio = fechaMs(s.fechaInicio);
+  if (!inicio) return 0;
+
+  const ultima = fechaMs(s.ultimaPujaFecha);
+  const ronda = Math.max(10, Number(s.duracionRonda) || 120);
+
+  return Math.max(inicio, ultima) + ronda * 1000;
+}
+
+async function cerrarSubasta(id) {
+  if (!usuarioAdminActual || cierresEnProceso.has(id)) return;
+
+  cierresEnProceso.add(id);
+
+  try {
+    await runTransaction(db, async tx => {
+      const ref = doc(db, "subastas", id);
+      const snap = await tx.get(ref);
+
+      if (!snap.exists()) return;
+
+      const s = snap.data();
+
+      if (s.estado !== "en_vivo") return;
+
+      const limite = fechaLimite(s);
+
+      if (!limite || Date.now() < limite + 2000) return;
 
       const tieneGanador =
-        Number(subasta.totalPujas || 0) > 0 &&
-        Boolean(subasta.ultimaPujaUid) &&
-        Number(subasta.pujaActual) > 0;
+        Number(s.totalPujas || 0) > 0 &&
+        typeof s.ultimaPujaUid === "string" &&
+        s.ultimaPujaUid.length > 0 &&
+        Number(s.pujaActual) > 0;
 
-      tx.update(referencia, {
+      tx.update(ref, {
         estado: "finalizada",
-
-        resultado: tieneGanador
-          ? "adjudicada"
-          : "sin_ofertas",
-
-        ganadorUid: tieneGanador
-          ? subasta.ultimaPujaUid
-          : "",
-
+        resultado: tieneGanador ? "adjudicada" : "sin_ofertas",
+        ganadorUid: tieneGanador ? s.ultimaPujaUid : "",
         ganadorNombre: tieneGanador
-          ? String(
-              subasta.ultimaPujaNombre || "Usuario"
-            )
+          ? String(s.ultimaPujaNombre || "Usuario")
           : "",
-
-        precioFinal: tieneGanador
-          ? Number(subasta.pujaActual)
-          : 0,
-
-        estadoPago: tieneGanador
-          ? "pendiente"
-          : "no_aplica",
-
-        estadoEntrega: tieneGanador
-          ? "pendiente"
-          : "no_aplica",
-
+        precioFinal: tieneGanador ? Number(s.pujaActual) : 0,
+        estadoPago: tieneGanador ? "pendiente" : "no_aplica",
+        estadoEntrega: tieneGanador ? "pendiente" : "no_aplica",
         finalizadaEn: serverTimestamp(),
         actualizadoEn: serverTimestamp()
       });
     });
 
   } catch (error) {
-    console.error(
-      "Error cerrando subasta:",
-      id,
-      error
-    );
+    console.error(`Error cerrando subasta ${id}:`, error);
   } finally {
-    cierresEnProcesoSF.delete(id);
+    cierresEnProceso.delete(id);
   }
 }
 
-/* REVISAR SUBASTAS CADA 3 SEGUNDOS */
+function revisarCierres() {
+  if (!usuarioAdminActual || perfilAdminActual?.rol !== "admin") return;
 
-function revisarCierresSF() {
-  if (!usuarioAdminActual) return;
-
-  const ahora = Date.now();
-
-  subastasCargadas.forEach((subasta) => {
-    if (subasta.estado !== "en_vivo") return;
-
-    const limite = limiteSF(subasta);
-
-    if (limite && ahora >= limite + 1500) {
-      cerrarSubastaSF(subasta.id);
+  for (const s of subastasCargadas) {
+    if (
+      s.estado === "en_vivo" &&
+      fechaLimite(s) > 0 &&
+      Date.now() >= fechaLimite(s) + 2000
+    ) {
+      cerrarSubasta(s.id);
     }
-  });
+  }
 }
 
-setInterval(revisarCierresSF, 3000);
+setInterval(revisarCierres, 3000);
 
-/* MOSTRAR GANADORES EN ADMIN */
+/* ============================================
+   GANADORES Y VENTAS
+============================================ */
 
-function dineroSF(valor) {
-  return Number(valor || 0).toLocaleString(
-    "es-MX",
-    {
-      style: "currency",
-      currency: "MXN",
-      maximumFractionDigits: 0
-    }
-  );
-}
-
-function mostrarGanadoresSF() {
-  const seccion = document.getElementById(
-    "section-ventas"
-  );
-
+function renderVentas() {
+  const seccion = $("section-ventas");
   if (!seccion) return;
 
-  let contenedor = document.getElementById(
-    "ganadoresListaSF"
-  );
+  let contenedor = $("ventasDinamicasSF");
 
   if (!contenedor) {
-    contenedor = document.createElement("div");
-    contenedor.id = "ganadoresListaSF";
-    seccion.appendChild(contenedor);
-
-    [...seccion.children].forEach((hijo) => {
-      if (
-        hijo !== contenedor &&
-        /Aún no hay ventas registradas/i.test(
-          hijo.textContent || ""
-        )
-      ) {
-        hijo.style.display = "none";
-      }
-    });
+    contenedor = elemento("div");
+    contenedor.id = "ventasDinamicasSF";
+    seccion.append(contenedor);
   }
+
+  // Oculta únicamente el mensaje anterior de vacío.
+  seccion.querySelectorAll(".admin-empty-state").forEach(e => {
+    if (e !== contenedor) e.hidden = true;
+  });
 
   contenedor.replaceChildren();
 
-  const terminadas = subastasCargadas
-    .filter((s) => s.estado === "finalizada")
-    .sort(
-      (a, b) =>
-        fechaMsSF(b.finalizadaEn) -
-        fechaMsSF(a.finalizadaEn)
-    );
+  const finalizadas = subastasCargadas
+    .filter(s => s.estado === "finalizada")
+    .sort((a, b) => fechaMs(b.finalizadaEn) - fechaMs(a.finalizadaEn));
 
-  if (!terminadas.length) {
-    const vacio = document.createElement("p");
-    vacio.textContent =
-      "Todavía no hay subastas finalizadas.";
-    vacio.style.padding = "30px";
-    vacio.style.textAlign = "center";
-    contenedor.appendChild(vacio);
+  if (!finalizadas.length) {
+    const p = elemento("p", "Todavía no hay subastas finalizadas.");
+    p.style.cssText = "padding:35px;text-align:center;color:#aeb0b9";
+    contenedor.append(p);
     return;
   }
 
-  terminadas.forEach((subasta) => {
-    const adjudicada =
-      subasta.resultado === "adjudicada" &&
-      Boolean(subasta.ganadorUid);
+  finalizadas.forEach(s => {
+    const ganador = s.resultado === "adjudicada" && !!s.ganadorUid;
+    const usuario = usuariosCargados.find(u => u.id === s.ganadorUid);
 
-    const usuario = usuariosCargados.find(
-      (u) => u.id === subasta.ganadorUid
+    const tarjeta = elemento("article");
+    tarjeta.style.cssText =
+      "background:#15161b;border:1px solid #34363c;border-radius:14px;padding:22px;margin:14px 0;color:white";
+
+    const titulo = elemento(
+      "h3",
+      `${s.marca || ""} ${s.modelo || ""} ${s.anio || ""} · ${s.id}`
     );
 
-    const tarjeta = document.createElement("article");
+    tarjeta.append(titulo);
 
-    tarjeta.style.cssText = `
-      background:#15161b;
-      border:1px solid #34363c;
-      border-radius:14px;
-      padding:22px;
-      margin:14px 0;
-      color:white;
-    `;
+    agregarDato(
+      tarjeta,
+      "Resultado",
+      ganador ? "🏆 ADJUDICADA" : "SIN OFERTAS"
+    );
 
-    const titulo = document.createElement("h3");
-    titulo.textContent = [
-      subasta.marca,
-      subasta.modelo,
-      subasta.anio,
-      "·",
-      subasta.id
-    ].filter(Boolean).join(" ");
+    agregarDato(
+      tarjeta,
+      "Ganador",
+      ganador
+        ? usuario?.nombre || s.ganadorNombre || "Usuario"
+        : "Ninguno"
+    );
 
-    tarjeta.appendChild(titulo);
+    agregarDato(
+      tarjeta,
+      "Correo",
+      ganador ? usuario?.correo || "No disponible" : "—"
+    );
 
-    const datos = [
-      [
-        "Resultado",
-        adjudicada
-          ? "🏆 ADJUDICADA"
-          : "SIN OFERTAS"
-      ],
-      [
-        "Ganador",
-        adjudicada
-          ? usuario?.nombre ||
-            subasta.ganadorNombre ||
-            "Usuario"
-          : "Ninguno"
-      ],
-      [
-        "Correo",
-        adjudicada
-          ? usuario?.correo || "No disponible"
-          : "—"
-      ],
-      [
-        "UID",
-        adjudicada
-          ? subasta.ganadorUid
-          : "—"
-      ],
-      [
-        "Precio final",
-        adjudicada
-          ? dineroSF(subasta.precioFinal)
-          : "—"
-      ],
-      [
-        "Pago",
-        adjudicada
-          ? subasta.estadoPago || "pendiente"
-          : "No aplica"
-      ],
-      [
-        "Entrega",
-        adjudicada
-          ? subasta.estadoEntrega || "pendiente"
-          : "No aplica"
-      ]
-    ];
+    agregarDato(
+      tarjeta,
+      "UID ganador",
+      ganador ? s.ganadorUid : "—"
+    );
 
-    datos.forEach(([etiqueta, valor]) => {
-      const fila = document.createElement("div");
+    agregarDato(
+      tarjeta,
+      "Precio final",
+      ganador ? dinero(s.precioFinal) : "—"
+    );
 
-      fila.style.cssText = `
-        display:flex;
-        justify-content:space-between;
-        flex-wrap:wrap;
-        gap:12px;
-        padding:10px 0;
-        border-bottom:1px solid #303138;
-      `;
+    agregarDato(
+      tarjeta,
+      "Estado de pago",
+      ganador ? s.estadoPago || "pendiente" : "No aplica"
+    );
 
-      const nombre = document.createElement("span");
-      nombre.textContent = etiqueta;
-      nombre.style.color = "#aeb0b9";
+    agregarDato(
+      tarjeta,
+      "Estado de entrega",
+      ganador ? s.estadoEntrega || "pendiente" : "No aplica"
+    );
 
-      const contenido = document.createElement("strong");
-      contenido.textContent = String(valor);
+    agregarDato(tarjeta, "Fecha de cierre", fechaTexto(s.finalizadaEn));
 
-      fila.append(nombre, contenido);
-      tarjeta.appendChild(fila);
-    });
-
-    contenedor.appendChild(tarjeta);
+    contenedor.append(tarjeta);
   });
 }
 
-/* SINCRONIZACIÓN CON FIREBASE */
+/* ============================================
+   FORMULARIO NUEVA SUBASTA
+============================================ */
 
-let escuchaGanadoresSF = null;
+const MAX_FOTOS = 20;
+const MAX_VIDEOS = 5;
 
-onAuthStateChanged(auth, (usuario) => {
-  if (escuchaGanadoresSF) {
-    escuchaGanadoresSF();
-    escuchaGanadoresSF = null;
-  }
+function siguienteId() {
+  const numeros = subastasCargadas
+    .map(s => Number(String(s.id).match(/^SF-(\d+)$/)?.[1] || 0));
 
-  if (!usuario) return;
+  return `SF-${Math.max(10048, ...numeros) + 1}`;
+}
 
-  getDoc(doc(db, "usuarios", usuario.uid))
-    .then((snapshot) => {
-      if (
-        !snapshot.exists() ||
-        snapshot.data().rol !== "admin" ||
-        snapshot.data().activo !== true
-      ) {
-        return;
-      }
+function abrirModal() {
+  mostrarSeccion("subastas");
 
-      escuchaGanadoresSF = onSnapshot(
-        collection(db, "subastas"),
-        () => {
-          setTimeout(() => {
-            mostrarGanadoresSF();
-            revisarCierresSF();
-          }, 100);
-        },
-        (error) => {
-          console.error(
-            "Error leyendo ganadores:",
-            error
-          );
-        }
-      );
-    })
-    .catch(console.error);
+  const modal = $("auctionModal");
+  if (!modal) return;
+
+  if ($("auctionId") && !$("auctionId").value)
+    $("auctionId").value = siguienteId();
+
+  if ($("auctionMinIncrement"))
+    $("auctionMinIncrement").value =
+      $("defaultIncrement")?.value || 500;
+
+  if ($("auctionRoundDuration"))
+    $("auctionRoundDuration").value =
+      $("defaultRoundDuration")?.value || 120;
+
+  modal.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function cerrarModal() {
+  if ($("auctionModal")) $("auctionModal").hidden = true;
+  document.body.style.overflow = "";
+}
+
+$("newAuctionButton")?.addEventListener("click", abrirModal);
+$("newAuctionTopButton")?.addEventListener("click", abrirModal);
+$("closeAuctionModalButton")?.addEventListener("click", cerrarModal);
+$("cancelAuctionButton")?.addEventListener("click", cerrarModal);
+
+document.querySelectorAll("[data-close-auction-modal]").forEach(e => {
+  e.addEventListener("click", cerrarModal);
 });
 
-/* REFRESCAR LA PANTALLA DE VENTAS */
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") cerrarModal();
+});
 
-setInterval(() => {
-  if (usuarioAdminActual) {
-    mostrarGanadoresSF();
+/* ============================================
+   FOTOGRAFÍAS Y VIDEOS
+============================================ */
+
+function claveArchivo(f) {
+  return `${f.name}-${f.size}-${f.lastModified}`;
+}
+
+function agregarArchivos(actuales, nuevos, maximo) {
+  const mapa = new Map();
+
+  [...actuales, ...nuevos].forEach(f => {
+    mapa.set(claveArchivo(f), f);
+  });
+
+  return [...mapa.values()].slice(0, maximo);
+}
+
+function vistaFotos() {
+  const contenedor = $("auctionPhotoPreview");
+  if (!contenedor) return;
+
+  contenedor.replaceChildren();
+
+  fotos.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    const img = elemento("img");
+    img.src = url;
+    img.alt = f.name;
+    img.style.cssText = "width:110px;height:85px;object-fit:cover";
+    img.onload = () => URL.revokeObjectURL(url);
+    contenedor.append(img);
+
+    if (i === 0) img.title = "PORTADA";
+  });
+
+  if ($("auctionPhotosLabel"))
+    $("auctionPhotosLabel").textContent =
+      `${fotos.length} fotografía(s) seleccionada(s)`;
+}
+
+function vistaVideos() {
+  const contenedor = $("auctionVideoPreview");
+  if (!contenedor) return;
+
+  contenedor.replaceChildren();
+
+  videos.forEach(f => {
+    const url = URL.createObjectURL(f);
+    const video = elemento("video");
+    video.src = url;
+    video.controls = true;
+    video.style.cssText = "width:160px;max-height:110px";
+    contenedor.append(video);
+  });
+
+  if ($("auctionVideosLabel"))
+    $("auctionVideosLabel").textContent =
+      `${videos.length} video(s) seleccionado(s)`;
+}
+
+$("auctionPhotos")?.addEventListener("change", e => {
+  fotos = agregarArchivos(
+    fotos,
+    [...e.target.files],
+    MAX_FOTOS
+  );
+
+  e.target.value = "";
+  vistaFotos();
+});
+
+$("auctionVideos")?.addEventListener("change", e => {
+  videos = agregarArchivos(
+    videos,
+    [...e.target.files],
+    MAX_VIDEOS
+  );
+
+  e.target.value = "";
+  vistaVideos();
+});
+
+async function subirCloudinary(archivo, tipo) {
+  const datos = new FormData();
+  datos.append("file", archivo);
+  datos.append("upload_preset", CLOUD_PRESET);
+
+  const respuesta = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${tipo}/upload`,
+    {
+      method: "POST",
+      body: datos
+    }
+  );
+
+  const json = await respuesta.json();
+
+  if (!respuesta.ok || !json.secure_url) {
+    throw new Error(json.error?.message || "Error al subir archivo");
   }
-}, 3000);
+
+  return json.secure_url;
+}
+
+/* ============================================
+   GUARDAR NUEVA SUBASTA
+============================================ */
+
+$("auctionForm")?.addEventListener("submit", async e => {
+  e.preventDefault();
+
+  if (!usuarioAdminActual || perfilAdminActual?.rol !== "admin") {
+    alert("Acceso de administrador requerido.");
+    return;
+  }
+
+  const v = id => $(id)?.value || "";
+
+  const id = v("auctionId").trim().toUpperCase();
+  const marca = v("auctionBrand").trim();
+  const modelo = v("auctionModel").trim();
+  const precioInicial = Number(v("auctionStartPrice"));
+  const incrementoMinimo = Number(v("auctionMinIncrement"));
+  const duracionRonda = Number(v("auctionRoundDuration"));
+
+  const fechaInicio = new Date(
+    `${v("auctionStartDate")}T${v("auctionStartTime")}`
+  );
+
+  if (
+    !id || !marca || !modelo ||
+    !Number.isFinite(fechaInicio.getTime()) ||
+    !Number.isFinite(precioInicial) ||
+    precioInicial < 0 ||
+    incrementoMinimo < 1 ||
+    duracionRonda < 10
+  ) {
+    alert("Revisa los datos obligatorios de la subasta.");
+    return;
+  }
+
+  const boton = $("saveAuctionButton");
+
+  if (boton) {
+    boton.disabled = true;
+    boton.textContent = "GUARDANDO...";
+  }
+
+  try {
+    const ref = doc(db, "subastas", id);
+
+    if ((await getDoc(ref)).exists()) {
+      throw new Error("Ya existe una subasta con ese ID.");
+    }
+
+    const urlsFotos = [];
+    const urlsVideos = [];
+
+    for (const f of fotos) {
+      urlsFotos.push(await subirCloudinary(f, "image"));
+    }
+
+    for (const f of videos) {
+      urlsVideos.push(await subirCloudinary(f, "video"));
+    }
+
+    await setDoc(ref, {
+      id,
+      categoria: v("auctionCategory") || "vehiculo",
+      marca,
+      modelo,
+      anio: Number(v("auctionYear")) || null,
+      version: v("auctionVersion"),
+      vin: v("auctionVin").toUpperCase(),
+      placas: v("auctionPlates").toUpperCase(),
+      kilometraje: Number(v("auctionMileage")) || null,
+      transmision: v("auctionTransmission"),
+      combustible: v("auctionFuel"),
+      color: v("auctionColor"),
+      tieneLlaves: v("auctionHasKeys") !== "no",
+      cantidadLlaves: Number(v("auctionKeyCount")) || 0,
+      tipoFactura: v("auctionInvoiceType"),
+      tarjetaCirculacion: v("auctionRegistrationCard"),
+      documentos: v("auctionDocuments"),
+      condicion: v("auctionCondition") || "Usado",
+      enciende: v("auctionStarts"),
+      danosEsteticos: v("auctionBodyDamage"),
+      danosMecanicos: v("auctionMechanicalDamage"),
+      observaciones: v("auctionDamageNotes"),
+      ubicacion: v("auctionLocation"),
+      descripcion: v("auctionDescription"),
+      precioInicial,
+      pujaActual: precioInicial,
+      incrementoMinimo,
+      duracionRonda,
+      fechaInicio: Timestamp.fromDate(fechaInicio),
+      estado: v("auctionStatus") || "programada",
+      totalPujas: 0,
+      ultimaPujaUid: "",
+      ultimaPujaNombre: "",
+      ultimaPujaFecha: null,
+      fotos: urlsFotos,
+      fotoPortada: urlsFotos[0] || "",
+      videos: urlsVideos,
+      creadoPorUid: usuarioAdminActual.uid,
+      creadoPorCorreo: usuarioAdminActual.email || "",
+      creadoEn: serverTimestamp(),
+      actualizadoEn: serverTimestamp()
+    });
+
+    alert(`Subasta ${id} creada correctamente.`);
+
+    $("auctionForm").reset();
+    fotos = [];
+    videos = [];
+    vistaFotos();
+    vistaVideos();
+    cerrarModal();
+
+  } catch (error) {
+    console.error("Error creando subasta:", error);
+    alert(error.message || "No se pudo crear la subasta.");
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.textContent = "CREAR SUBASTA";
+    }
+  }
+});
+
+/* ============================================
+   CONFIGURACIÓN
+============================================ */
+
+$("saveSettingsButton")?.addEventListener("click", () => {
+  const duracion = Number($("defaultRoundDuration")?.value);
+  const incremento = Number($("defaultIncrement")?.value);
+
+  if (duracion < 10 || incremento < 1) {
+    alert("La duración o el incremento no son válidos.");
+    return;
+  }
+
+  if ($("settingsMessage")) {
+    $("settingsMessage").hidden = false;
+    $("settingsMessage").textContent =
+      "Configuración validada para las próximas subastas.";
+  }
+});
+
+/* FIN DE ADMIN.JS */
