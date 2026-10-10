@@ -1,18 +1,4 @@
 
-/*
-  SUBASTANDO FIERROS
-  app.js - Página pública
-
-  Compatible con:
-  - index.html
-  - firebase-config.js
-  - Firestore: subastas / usuarios
-  - Firebase JS 12.18.0
-
-  IMPORTANTE:
-  La activación automática y el cierre definitivo
-  de subastas deben ejecutarse en un servidor seguro.
-*/
 
 import { auth, db } from "./firebase-config.js";
 
