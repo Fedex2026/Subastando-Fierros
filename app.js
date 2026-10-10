@@ -6,8 +6,15 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 import {
-  collection, doc, getDoc, onSnapshot, query,
-  orderBy, limit, runTransaction, serverTimestamp
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  limit,
+  runTransaction,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const $ = id => document.getElementById(id);
@@ -35,8 +42,11 @@ function ms(value) {
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;",
-    '"': "&quot;", "'": "&#39;"
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
   }[ch]));
 }
 
@@ -57,26 +67,48 @@ function formatCountdown(seconds) {
   const h = Math.floor((n % 86400) / 3600);
   const m = Math.floor((n % 3600) / 60);
   const s = n % 60;
-  const clock = [h, m, s].map(x => String(x).padStart(2, "0")).join(":");
+  const clock = [h, m, s]
+    .map(x => String(x).padStart(2, "0"))
+    .join(":");
+
   return d ? `${d}d ${clock}` : clock;
 }
 
 function displayClock(seconds) {
   const n = Math.max(0, Math.ceil(seconds));
-  setText("hours", String(Math.floor(n / 3600)).padStart(2, "0"));
-  setText("minutes", String(Math.floor(n % 3600 / 60)).padStart(2, "0"));
-  setText("seconds", String(n % 60).padStart(2, "0"));
+
+  setText(
+    "hours",
+    String(Math.floor(n / 3600)).padStart(2, "0")
+  );
+
+  setText(
+    "minutes",
+    String(Math.floor(n % 3600 / 60)).padStart(2, "0")
+  );
+
+  setText(
+    "seconds",
+    String(n % 60).padStart(2, "0")
+  );
 }
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80";
 
 const CATEGORY_NAMES = {
-  vehiculo: "autos", auto: "autos", autos: "autos",
-  camioneta: "autos", moto: "motos", motos: "motos",
-  electronica: "electronica", herramientas: "herramientas",
-  maquinaria: "herramientas", relojes: "relojes",
-  lotes: "lotes", hogar: "hogar"
+  vehiculo: "autos",
+  auto: "autos",
+  autos: "autos",
+  camioneta: "autos",
+  moto: "motos",
+  motos: "motos",
+  electronica: "electronica",
+  herramientas: "herramientas",
+  maquinaria: "herramientas",
+  relojes: "relojes",
+  lotes: "lotes",
+  hogar: "hogar"
 };
 
 function categoryOf(value) {
@@ -92,81 +124,163 @@ let latestBids = [];
 let currentUser = null;
 let currentProfile = null;
 let authReady = false;
-let activationBusy = new Set();
 
 const PREVIEW_MINUTES = 5;
 const DEFAULT_ROUND_SECONDS = 120;
 
 /* =====================================
    SUBASTAS GANADAS POR EL USUARIO
-   Solo muestra premios del UID autenticado.
 ===================================== */
 
 function isAwardedToMe(a) {
   if (!currentUser || !a) return false;
-  const winnerUid = a.ganadorUid ?? a.uidGanador ?? a.ganador?.uid;
+
+  const winnerUid =
+    a.ganadorUid ??
+    a.uidGanador ??
+    a.ganador?.uid;
+
   const state = String(a.estado || "").toLowerCase();
   const result = String(a.resultado || "").toLowerCase();
+
   return winnerUid === currentUser.uid &&
-    (state === "finalizada" || state === "adjudicada" ||
-     result === "adjudicada");
+    (
+      state === "finalizada" ||
+      state === "adjudicada" ||
+      result === "adjudicada"
+    );
 }
 
 function renderMyWonAuctions() {
-  let section = document.getElementById("misSubastasGanadasSF");
+  let section = $("misSubastasGanadasSF");
+
   if (!section) {
     section = document.createElement("section");
     section.id = "misSubastasGanadasSF";
-    section.style.cssText = "max-width:1250px;margin:28px auto;padding:24px;background:#111216;border:1px solid #414148;border-radius:18px;color:#fff;box-sizing:border-box";
+
+    section.style.cssText =
+      "max-width:1250px;margin:28px auto;padding:24px;" +
+      "background:#111216;border:1px solid #414148;" +
+      "border-radius:18px;color:#fff;box-sizing:border-box";
+
     const main = document.querySelector("main");
+
     if (main) main.prepend(section);
     else document.body.prepend(section);
   }
 
   const won = lots.filter(isAwardedToMe);
-  section.hidden = !won.length;
-  if (!won.length) {
-    section.replaceChildren();
-    return;
-  }
 
+  section.hidden = !won.length;
   section.replaceChildren();
+
+  if (!won.length) return;
+
   const title = document.createElement("h2");
-  title.textContent = "🏆 ¡FELICIDADES! GANASTE UNA SUBASTA" + (won.length > 1 ? "S" : "");
-  title.style.cssText = "font-size:clamp(20px,3vw,30px);margin:0 0 8px;color:#fff";
+  title.textContent =
+    "🏆 ¡FELICIDADES! GANASTE UNA SUBASTA" +
+    (won.length > 1 ? "S" : "");
+
+  title.style.cssText =
+    "font-size:clamp(20px,3vw,30px);" +
+    "margin:0 0 8px;color:#fff";
+
   const description = document.createElement("p");
-  description.textContent = "Estas unidades fueron adjudicadas a tu cuenta. Consulta el estado de tu pago y entrega.";
-  description.style.cssText = "color:#c3c3c8;margin:0 0 18px";
+
+  description.textContent =
+    "Estas unidades fueron adjudicadas a tu cuenta. " +
+    "Consulta el estado de tu pago y entrega.";
+
+  description.style.cssText =
+    "color:#c3c3c8;margin:0 0 18px";
+
   section.append(title, description);
 
   won.forEach(a => {
     const card = document.createElement("article");
-    card.style.cssText = "display:flex;flex-wrap:wrap;gap:18px;align-items:center;padding:18px;margin-top:14px;border:1px solid #36363d;border-radius:14px;background:#1a1b20";
-    const photo = (Array.isArray(a.fotos) && a.fotos.find(u => typeof u === "string" && u.startsWith("https://"))) || a.fotoPortada;
-    if (typeof photo === "string" && photo.startsWith("https://")) {
+
+    card.style.cssText =
+      "display:flex;flex-wrap:wrap;gap:18px;" +
+      "align-items:center;padding:18px;margin-top:14px;" +
+      "border:1px solid #36363d;border-radius:14px;" +
+      "background:#1a1b20";
+
+    const photo =
+      (
+        Array.isArray(a.fotos) &&
+        a.fotos.find(
+          u => typeof u === "string" &&
+          u.startsWith("https://")
+        )
+      ) || a.fotoPortada;
+
+    if (
+      typeof photo === "string" &&
+      photo.startsWith("https://")
+    ) {
       const img = document.createElement("img");
       img.src = photo;
       img.alt = "Vehículo adjudicado";
       img.loading = "lazy";
-      img.style.cssText = "width:190px;max-width:100%;height:125px;object-fit:cover;border-radius:10px";
+
+      img.style.cssText =
+        "width:190px;max-width:100%;height:125px;" +
+        "object-fit:cover;border-radius:10px";
+
       card.append(img);
     }
+
     const content = document.createElement("div");
     content.style.cssText = "flex:1;min-width:220px";
+
     const name = document.createElement("h3");
-    name.textContent = [a.marca,a.modelo,a.anio].filter(Boolean).join(" ") || a.id;
-    name.style.cssText = "margin:0 0 8px;font-size:21px";
+
+    name.textContent =
+      [a.marca, a.modelo, a.anio]
+        .filter(Boolean)
+        .join(" ") || a.id;
+
+    name.style.cssText =
+      "margin:0 0 8px;font-size:21px";
+
     const price = document.createElement("div");
-    price.textContent = "🏆 ADJUDICADA · " + money(a.precioFinal ?? a.pujaActual ?? a.precioInicial);
-    price.style.cssText = "font-size:22px;font-weight:800;color:#ffc857;margin-bottom:9px";
+
+    price.textContent =
+      "🏆 ADJUDICADA · " +
+      money(
+        a.precioFinal ??
+        a.pujaActual ??
+        a.precioInicial
+      );
+
+    price.style.cssText =
+      "font-size:22px;font-weight:800;" +
+      "color:#ffc857;margin-bottom:9px";
+
     const info = document.createElement("p");
-    info.style.cssText = "margin:0 0 10px;color:#d2d2d6;line-height:1.7";
-    info.textContent = `Folio: ${a.id} · Pago: ${a.estadoPago || "pendiente"} · Entrega: ${a.estadoEntrega || "pendiente"}`;
+
+    info.style.cssText =
+      "margin:0 0 10px;color:#d2d2d6;line-height:1.7";
+
+    info.textContent =
+      `Folio: ${a.id} · ` +
+      `Pago: ${a.estadoPago || "pendiente"} · ` +
+      `Entrega: ${a.estadoEntrega || "pendiente"}`;
+
     const link = document.createElement("a");
-    link.href = `vehiculo.html?id=${encodeURIComponent(a.id)}`;
+
+    link.href =
+      `vehiculo.html?id=${encodeURIComponent(a.id)}`;
+
     link.textContent = "VER MI VEHÍCULO →";
-    link.style.cssText = "color:#fff;background:#e51d2b;border-radius:8px;padding:10px 15px;text-decoration:none;font-weight:800;display:inline-block";
-    content.append(name,price,info,link);
+
+    link.style.cssText =
+      "color:#fff;background:#e51d2b;" +
+      "border-radius:8px;padding:10px 15px;" +
+      "text-decoration:none;font-weight:800;" +
+      "display:inline-block";
+
+    content.append(name, price, info, link);
     card.append(content);
     section.append(card);
   });
@@ -183,30 +297,44 @@ onAuthStateChanged(auth, async user => {
 
   if (user) {
     try {
-      const snapshot = await getDoc(doc(db, "usuarios", user.uid));
-      if (snapshot.exists()) currentProfile = snapshot.data();
+      const snapshot = await getDoc(
+        doc(db, "usuarios", user.uid)
+      );
+
+      if (snapshot.exists()) {
+        currentProfile = snapshot.data();
+      }
     } catch (error) {
-      console.error("Error consultando perfil:", error);
+      console.error(
+        "Error consultando perfil:",
+        error
+      );
     }
   }
 
   authReady = true;
+
   updateHeaderSession();
   renderMyWonAuctions();
   updateBidButton();
-  activateScheduledAuctions();
 });
 
 function isAdmin() {
-  return currentUser &&
+  return Boolean(
+    currentUser &&
     currentProfile?.rol === "admin" &&
-    currentProfile?.activo === true;
+    currentProfile?.activo === true
+  );
 }
 
 function updateHeaderSession() {
   const links = [
-    ...document.querySelectorAll('.header-actions a[href="login.html"]'),
-    ...document.querySelectorAll('#mobileMenu a[href="login.html"]')
+    ...document.querySelectorAll(
+      '.header-actions a[href="login.html"]'
+    ),
+    ...document.querySelectorAll(
+      '#mobileMenu a[href="login.html"]'
+    )
   ];
 
   const label = !currentUser
@@ -228,7 +356,7 @@ function updateHeaderSession() {
 }
 
 /* =====================================
-   HORARIOS
+   HORARIOS Y ACTIVACIÓN AUTOMÁTICA
 ===================================== */
 
 function startTime(a) {
@@ -236,99 +364,86 @@ function startTime(a) {
 }
 
 function roundSeconds(a) {
-  return Math.max(10, Number(a?.duracionRonda) || DEFAULT_ROUND_SECONDS);
+  return Math.max(
+    10,
+    Number(a?.duracionRonda) ||
+    DEFAULT_ROUND_SECONDS
+  );
 }
 
 function endTime(a) {
   const start = startTime(a);
+
   if (!start) return 0;
-  return Math.max(start, ms(a?.ultimaPujaFecha)) +
-    roundSeconds(a) * 1000;
+
+  return Math.max(
+    start,
+    ms(a?.ultimaPujaFecha)
+  ) + roundSeconds(a) * 1000;
 }
 
 function isScheduled(a) {
   return a?.estado === "programada";
 }
 
-function isLive(a) {
-  return a?.estado === "en_vivo";
-}
-
 function isClosed(a) {
-  return a?.estado === "finalizada" || a?.estado === "cancelada";
+  return (
+    a?.estado === "finalizada" ||
+    a?.estado === "cancelada"
+  );
 }
 
 function isUpcoming(a) {
-  return isScheduled(a) && startTime(a) > Date.now();
+  return (
+    isScheduled(a) &&
+    startTime(a) > Date.now()
+  );
 }
 
 function isInRound(a) {
   return Boolean(
-    a && !isClosed(a) &&
+    a &&
+    !isClosed(a) &&
     startTime(a) > 0 &&
     Date.now() >= startTime(a) &&
     Date.now() < endTime(a)
+  );
+}
+
+/*
+  CORRECCIÓN PRINCIPAL:
+
+  Una subasta PROGRAMADA pasa a considerarse
+  EN VIVO al llegar su fecha y hora.
+
+  No requiere que el administrador tenga
+  abierta la página.
+
+  Las reglas de Firestore también permiten
+  las pujas durante este estado.
+*/
+
+function isLive(a) {
+  return Boolean(
+    a &&
+    (
+      a.estado === "en_vivo" ||
+      a.estado === "programada"
+    ) &&
+    isInRound(a)
   );
 }
 
 function secondsUntilStart(a) {
-  return (startTime(a) - Date.now()) / 1000;
+  return (
+    startTime(a) - Date.now()
+  ) / 1000;
 }
 
 function secondsUntilEnd(a) {
-  return (endTime(a) - Date.now()) / 1000;
-}
-
-/* =====================================
-   ACTIVACIÓN AUTOMÁTICA POR ADMIN
-
-   Requiere sesión de administrador
-   abierta en esta página.
-===================================== */
-
-async function activateScheduledAuctions() {
-  if (!authReady || !isAdmin()) return;
-
-  const candidates = lots.filter(a =>
-    isScheduled(a) &&
-    startTime(a) > 0 &&
-    Date.now() >= startTime(a) &&
-    Date.now() < endTime(a)
-  );
-
-  for (const auction of candidates) {
-    if (activationBusy.has(auction.id)) continue;
-
-    activationBusy.add(auction.id);
-
-    try {
-      const ref = doc(db, "subastas", auction.id);
-
-      await runTransaction(db, async transaction => {
-        const snapshot = await transaction.get(ref);
-        if (!snapshot.exists()) return;
-
-        const current = snapshot.data();
-
-        if (
-          current.estado !== "programada" ||
-          !startTime(current) ||
-          Date.now() < startTime(current) ||
-          Date.now() >= endTime(current)
-        ) return;
-
-        transaction.update(ref, {
-          estado: "en_vivo"
-        });
-      });
-
-      console.log("Activación revisada:", auction.id);
-    } catch (error) {
-      console.error("No se pudo activar:", auction.id, error);
-    } finally {
-      activationBusy.delete(auction.id);
-    }
-  }
+  return (
+    endTime(a) - Date.now()
+  ) / 1000;
 }
 
 /* =====================================
@@ -337,31 +452,35 @@ async function activateScheduledAuctions() {
 
 function chooseMainAuction() {
   const live = lots
-    .filter(a => isLive(a) && isInRound(a))
-    .sort((a, b) => startTime(a) - startTime(b));
+    .filter(isLive)
+    .sort(
+      (a, b) =>
+        startTime(a) - startTime(b)
+    );
 
   if (live.length) return live[0];
 
-  const pending = lots
-    .filter(a => isScheduled(a) && isInRound(a))
-    .sort((a, b) => startTime(a) - startTime(b));
-
-  if (pending.length) return pending[0];
-
   const upcoming = lots
     .filter(isUpcoming)
-    .sort((a, b) => startTime(a) - startTime(b));
+    .sort(
+      (a, b) =>
+        startTime(a) - startTime(b)
+    );
 
   if (
     upcoming.length &&
-    secondsUntilStart(upcoming[0]) <= PREVIEW_MINUTES * 60
-  ) return upcoming[0];
+    secondsUntilStart(upcoming[0]) <=
+      PREVIEW_MINUTES * 60
+  ) {
+    return upcoming[0];
+  }
 
   return null;
 }
 
 function refreshMainAuction() {
   const chosen = chooseMainAuction();
+
   const empty = $("liveEmptyState");
   const content = $("liveAuctionContent");
 
@@ -369,13 +488,14 @@ function refreshMainAuction() {
     if (empty) empty.hidden = false;
     if (content) content.hidden = true;
 
-    if (activeAuction && unsubscribeBids) {
+    if (unsubscribeBids) {
       unsubscribeBids();
       unsubscribeBids = null;
     }
 
     activeAuction = null;
     latestBids = [];
+
     updateBidButton();
     return;
   }
@@ -383,7 +503,9 @@ function refreshMainAuction() {
   if (empty) empty.hidden = true;
   if (content) content.hidden = false;
 
-  const changed = activeAuction?.id !== chosen.id;
+  const changed =
+    activeAuction?.id !== chosen.id;
+
   activeAuction = chosen;
 
   if (changed) {
@@ -401,7 +523,11 @@ function refreshMainAuction() {
 ===================================== */
 
 function appendDetail(container, label, value) {
-  if (value === undefined || value === null || value === "") return;
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) return;
 
   const wrapper = document.createElement("div");
   const dt = document.createElement("dt");
@@ -409,12 +535,17 @@ function appendDetail(container, label, value) {
 
   dt.textContent = label;
   dd.textContent = String(value);
+
   wrapper.append(dt, dd);
   container.append(wrapper);
 }
 
 function appendListItem(container, value) {
-  if (value === undefined || value === null || value === "") return;
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) return;
 
   const item = document.createElement("li");
   item.textContent = String(value);
@@ -422,24 +553,58 @@ function appendListItem(container, value) {
 }
 
 function renderMainAuction(a) {
-  setText("liveVehicleName",
-    `${a.marca || ""} ${a.modelo || ""}`.trim().toUpperCase()
+  setText(
+    "liveVehicleName",
+    `${a.marca || ""} ${a.modelo || ""}`
+      .trim()
+      .toUpperCase()
   );
 
-  setText("liveVehicleVersion",
-    [a.anio, a.version].filter(Boolean).join(" | ")
+  setText(
+    "liveVehicleVersion",
+    [a.anio, a.version]
+      .filter(Boolean)
+      .join(" | ")
   );
 
   setText("liveLotId", `ID: ${a.id}`);
-  setText("currentBid", money(a.pujaActual ?? a.precioInicial ?? 0));
-  setText("liveMinIncrement", money(a.incrementoMinimo || 500));
-  setText("bidCount", a.totalPujas || 0);
-  setText("participants", a.participantes ?? "—");
+
+  setText(
+    "currentBid",
+    money(
+      a.pujaActual ??
+      a.precioInicial ??
+      0
+    )
+  );
+
+  setText(
+    "liveMinIncrement",
+    money(a.incrementoMinimo || 500)
+  );
+
+  setText(
+    "bidCount",
+    a.totalPujas || 0
+  );
+
+  setText(
+    "participants",
+    a.participantes ?? "—"
+  );
 
   const input = $("bidInput");
-  if (input && document.activeElement !== input) {
+
+  if (
+    input &&
+    document.activeElement !== input
+  ) {
     input.value =
-      Number(a.pujaActual ?? a.precioInicial ?? 0) +
+      Number(
+        a.pujaActual ??
+        a.precioInicial ??
+        0
+      ) +
       Number(a.incrementoMinimo || 500);
   }
 
@@ -448,48 +613,82 @@ function renderMainAuction(a) {
 }
 
 function renderAuctionPhotos(a) {
-  const photos = (Array.isArray(a.fotos) ? a.fotos : [])
-    .filter(url => typeof url === "string" && url.startsWith("https://"));
+  const photos = (
+    Array.isArray(a.fotos)
+      ? a.fotos
+      : []
+  ).filter(
+    url =>
+      typeof url === "string" &&
+      url.startsWith("https://")
+  );
 
   if (
     !photos.length &&
     typeof a.fotoPortada === "string" &&
     a.fotoPortada.startsWith("https://")
-  ) photos.push(a.fotoPortada);
+  ) {
+    photos.push(a.fotoPortada);
+  }
 
   const main = $("mainAuctionImage");
+
   const strip = document.querySelector(
     "#liveAuctionContent .thumb-strip"
   );
 
-  if (main && main.dataset.lot !== a.id) {
-    main.src = photos[0] || FALLBACK_IMAGE;
+  if (
+    main &&
+    main.dataset.lot !== a.id
+  ) {
+    main.src =
+      photos[0] || FALLBACK_IMAGE;
+
     main.dataset.lot = a.id;
   }
 
-  if (!strip || strip.dataset.lot === a.id) return;
+  if (
+    !strip ||
+    strip.dataset.lot === a.id
+  ) return;
 
   strip.replaceChildren();
   strip.dataset.lot = a.id;
 
   photos.forEach((url, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "thumb" + (index === 0 ? " active" : "");
+    const button =
+      document.createElement("button");
 
-    const image = document.createElement("img");
+    button.type = "button";
+
+    button.className =
+      "thumb" +
+      (index === 0 ? " active" : "");
+
+    const image =
+      document.createElement("img");
+
     image.src = url;
     image.alt = `Foto ${index + 1}`;
     image.loading = "lazy";
+
     button.append(image);
 
-    button.addEventListener("click", () => {
-      if (main) main.src = url;
+    button.addEventListener(
+      "click",
+      () => {
+        if (main) main.src = url;
 
-      strip.querySelectorAll(".thumb").forEach(thumb => {
-        thumb.classList.toggle("active", thumb === button);
-      });
-    });
+        strip
+          .querySelectorAll(".thumb")
+          .forEach(thumb => {
+            thumb.classList.toggle(
+              "active",
+              thumb === button
+            );
+          });
+      }
+    );
 
     strip.append(button);
   });
@@ -507,29 +706,59 @@ function renderAuctionInformation(a) {
       ["Año", a.anio],
       ["Versión", a.version],
       ["Transmisión", a.transmision],
-      ["Kilometraje", a.kilometraje != null
-        ? `${a.kilometraje} km` : null],
+      [
+        "Kilometraje",
+        a.kilometraje != null
+          ? `${a.kilometraje} km`
+          : null
+      ],
       ["Ubicación", a.ubicacion],
       ["Combustible", a.combustible],
       ["Color", a.color]
-    ].forEach(([label, value]) => appendDetail(info, label, value));
+    ].forEach(
+      ([label, value]) =>
+        appendDetail(
+          info,
+          label,
+          value
+        )
+    );
   }
 
   const details = $("liveVehicleDetails");
+
   if (details) {
     details.replaceChildren();
+
     [
-      a.condicion, a.descripcion, a.observaciones,
-      a.danosEsteticos, a.danosMecanicos
-    ].forEach(value => appendListItem(details, value));
+      a.condicion,
+      a.descripcion,
+      a.observaciones,
+      a.danosEsteticos,
+      a.danosMecanicos
+    ].forEach(
+      value =>
+        appendListItem(details, value)
+    );
   }
 
-  const documents = $("liveVehicleDocuments");
+  const documents =
+    $("liveVehicleDocuments");
+
   if (documents) {
     documents.replaceChildren();
+
     [
-      a.tipoFactura, a.documentos, a.tarjetaCirculacion
-    ].forEach(value => appendListItem(documents, value));
+      a.tipoFactura,
+      a.documentos,
+      a.tarjetaCirculacion
+    ].forEach(
+      value =>
+        appendListItem(
+          documents,
+          value
+        )
+    );
   }
 }
 
@@ -538,28 +767,50 @@ function renderAuctionInformation(a) {
 ===================================== */
 
 function listenToBids(auctionId) {
-  if (unsubscribeBids) unsubscribeBids();
+  if (unsubscribeBids) {
+    unsubscribeBids();
+  }
 
   latestBids = [];
   renderBidHistory();
 
   unsubscribeBids = onSnapshot(
     query(
-      collection(db, "subastas", auctionId, "pujas"),
+      collection(
+        db,
+        "subastas",
+        auctionId,
+        "pujas"
+      ),
       orderBy("fecha", "desc"),
       limit(10)
     ),
+
     snapshot => {
-      if (activeAuction?.id !== auctionId) return;
-      latestBids = snapshot.docs.map(item => item.data());
+      if (
+        activeAuction?.id !== auctionId
+      ) return;
+
+      latestBids = snapshot.docs.map(
+        item => item.data()
+      );
+
       renderBidHistory();
     },
+
     error => {
-      console.error("Error leyendo historial:", error);
-      const container = $("bidHistory");
+      console.error(
+        "Error leyendo historial:",
+        error
+      );
+
+      const container =
+        $("bidHistory");
+
       if (container) {
         container.textContent =
-          "No se pudo cargar el historial. Revisa las reglas de Firebase.";
+          "No se pudo cargar el historial. " +
+          "Revisa las reglas de Firebase.";
       }
     }
   );
@@ -567,36 +818,67 @@ function listenToBids(auctionId) {
 
 function renderBidHistory() {
   const container = $("bidHistory");
+
   if (!container) return;
 
   container.replaceChildren();
 
   if (!latestBids.length) {
-    const p = document.createElement("p");
-    p.textContent = "Todavía no hay pujas registradas.";
+    const p =
+      document.createElement("p");
+
+    p.textContent =
+      "Todavía no hay pujas registradas.";
+
     container.append(p);
     return;
   }
 
   latestBids.forEach((bid, index) => {
-    const row = document.createElement("div");
-    const position = document.createElement("span");
-    const name = document.createElement("span");
-    const amount = document.createElement("strong");
-    const time = document.createElement("small");
+    const row =
+      document.createElement("div");
 
-    position.textContent = String(index + 1);
-    name.textContent = bid.nombre || "Usuario";
-    amount.textContent = money(bid.monto);
+    const position =
+      document.createElement("span");
+
+    const name =
+      document.createElement("span");
+
+    const amount =
+      document.createElement("strong");
+
+    const time =
+      document.createElement("small");
+
+    position.textContent =
+      String(index + 1);
+
+    name.textContent =
+      bid.nombre || "Usuario";
+
+    amount.textContent =
+      money(bid.monto);
 
     const bidTime = ms(bid.fecha);
+
     time.textContent = bidTime
-      ? new Date(bidTime).toLocaleTimeString("es-MX", {
-          timeZone: "America/Mexico_City"
-        })
+      ? new Date(bidTime)
+          .toLocaleTimeString(
+            "es-MX",
+            {
+              timeZone:
+                "America/Mexico_City"
+            }
+          )
       : "—";
 
-    row.append(position, name, amount, time);
+    row.append(
+      position,
+      name,
+      amount,
+      time
+    );
+
     container.append(row);
   });
 }
@@ -609,62 +891,112 @@ function updateAuctionClock() {
   if (!activeAuction) return;
 
   const a = activeAuction;
-  const waiting = startTime(a) > Date.now();
-  const inRound = isInRound(a);
-  const live = isLive(a);
-  const finished = isClosed(a) || (!waiting && !inRound);
+
+  const waiting =
+    startTime(a) > Date.now();
+
+  const inRound =
+    isInRound(a);
+
+  const live =
+    isLive(a);
+
+  const finished =
+    isClosed(a) ||
+    (!waiting && !inRound);
 
   let status;
   let label;
   let seconds;
 
   if (finished) {
-    status = a.estado === "cancelada" ? "CANCELADA" : "FINALIZADA";
-    label = a.estado === "cancelada"
-      ? "SUBASTA CANCELADA"
-      : "TIEMPO DE SUBASTA AGOTADO";
+    status =
+      a.estado === "cancelada"
+        ? "CANCELADA"
+        : "FINALIZADA";
+
+    label =
+      a.estado === "cancelada"
+        ? "SUBASTA CANCELADA"
+        : "TIEMPO DE SUBASTA AGOTADO";
+
     seconds = 0;
+
   } else if (waiting) {
     status = "PRÓXIMAMENTE";
-    seconds = secondsUntilStart(a);
+
+    seconds =
+      secondsUntilStart(a);
+
     label = seconds <= 60
       ? "🔴 ¡FALTA MENOS DE 1 MINUTO!"
       : seconds <= 180
         ? "⏰ ¡FALTAN MENOS DE 3 MINUTOS!"
         : "LA SUBASTA COMIENZA EN:";
+
   } else if (live) {
     status = "EN VIVO";
-    label = "🔨 EN VIVO · TIEMPO PARA PUJAR:";
-    seconds = secondsUntilEnd(a);
+
+    label =
+      "🔨 EN VIVO · TIEMPO PARA PUJAR:";
+
+    seconds =
+      secondsUntilEnd(a);
+
   } else {
-    status = "ESPERANDO ACTIVACIÓN";
-    label = isAdmin()
-      ? "ACTIVANDO SUBASTA EN FIREBASE..."
-      : "ESPERANDO CONFIRMACIÓN DE FIREBASE";
-    seconds = secondsUntilEnd(a);
+    status = "NO DISPONIBLE";
+
+    label =
+      "SUBASTA NO DISPONIBLE";
+
+    seconds = 0;
   }
 
-  setText("liveStatusBadge", status);
-  setText("countdownLabel", label);
+  setText(
+    "liveStatusBadge",
+    status
+  );
+
+  setText(
+    "countdownLabel",
+    label
+  );
+
   displayClock(seconds);
 
-  const bar = $("auctionTimeBar");
-  const fill = $("auctionTimeBarFill");
+  const bar =
+    $("auctionTimeBar");
 
-  if (bar) bar.hidden = waiting || finished || !live;
+  const fill =
+    $("auctionTimeBarFill");
+
+  if (bar) {
+    bar.hidden =
+      waiting ||
+      finished ||
+      !live;
+  }
 
   if (fill) {
-    const percentage = Math.max(0, Math.min(
-      100, seconds / roundSeconds(a) * 100
-    ));
-    fill.style.width = `${percentage}%`;
+    const percentage = Math.max(
+      0,
+      Math.min(
+        100,
+        seconds /
+          roundSeconds(a) *
+          100
+      )
+    );
+
+    fill.style.width =
+      `${percentage}%`;
   }
 
   updateBidButton();
 }
 
 /* =====================================
-   PERMISOS
+   PERMISOS PARA PUJAR
 ===================================== */
 
 function canBid() {
@@ -681,34 +1013,64 @@ function canBid() {
 }
 
 function updateBidButton() {
-  const button = $("bidButton");
+  const button =
+    $("bidButton");
+
   if (!button) return;
 
-  button.disabled = !canBid();
+  button.disabled =
+    !canBid();
 
   if (!activeAuction) {
-    button.textContent = "SIN SUBASTA";
-  } else if (isClosed(activeAuction)) {
-    button.textContent = "SUBASTA FINALIZADA";
-  } else if (startTime(activeAuction) > Date.now()) {
-    button.textContent = "SUBASTA PROGRAMADA";
-  } else if (!isInRound(activeAuction)) {
-    button.textContent = "TIEMPO AGOTADO";
-  } else if (!isLive(activeAuction)) {
-    button.textContent = "ESPERANDO ACTIVACIÓN";
-  } else if (!authReady) {
-    button.textContent = "VERIFICANDO SESIÓN";
-  } else if (!currentUser) {
-    button.textContent = "INICIA SESIÓN PARA PUJAR";
-  } else if (!canBid()) {
-    button.textContent = "MEMBRESÍA REQUERIDA";
+    button.textContent =
+      "SIN SUBASTA";
+
+  } else if (
+    isClosed(activeAuction)
+  ) {
+    button.textContent =
+      "SUBASTA FINALIZADA";
+
+  } else if (
+    startTime(activeAuction) >
+    Date.now()
+  ) {
+    button.textContent =
+      "SUBASTA PROGRAMADA";
+
+  } else if (
+    !isInRound(activeAuction)
+  ) {
+    button.textContent =
+      "TIEMPO AGOTADO";
+
+  } else if (
+    !authReady
+  ) {
+    button.textContent =
+      "VERIFICANDO SESIÓN";
+
+  } else if (
+    !currentUser
+  ) {
+    button.textContent =
+      "INICIA SESIÓN PARA PUJAR";
+
+  } else if (
+    !canBid()
+  ) {
+    button.textContent =
+      "MEMBRESÍA REQUERIDA";
+
   } else {
-    button.textContent = "🔨 PUJAR AHORA";
+    button.textContent =
+      "🔨 PUJAR AHORA";
   }
 }
 
 function showMessage(message) {
   const el = $("bidMessage");
+
   if (el) {
     el.hidden = false;
     el.textContent = message;
@@ -721,99 +1083,195 @@ function showMessage(message) {
    REGISTRO DE PUJAS
 ===================================== */
 
-$("bidButton")?.addEventListener("click", async () => {
-  if (!authReady) {
-    showMessage("Verificando tu sesión...");
-    return;
-  }
+$("bidButton")?.addEventListener(
+  "click",
+  async () => {
 
-  if (!currentUser) {
-    sessionStorage.setItem("subastandoFierrosDestino", location.href);
-    location.href = "login.html";
-    return;
-  }
+    if (!authReady) {
+      showMessage(
+        "Verificando tu sesión..."
+      );
+      return;
+    }
 
-  if (!canBid()) {
-    showMessage(
-      "La subasta no está activa o tu membresía no está autorizada."
-    );
-    return;
-  }
-
-  const auctionId = activeAuction.id;
-  const amount = Number($("bidInput")?.value);
-
-  if (!Number.isSafeInteger(amount) || amount <= 0) {
-    showMessage("Ingresa una cantidad válida.");
-    return;
-  }
-
-  const button = $("bidButton");
-  button.disabled = true;
-  button.textContent = "REGISTRANDO...";
-
-  try {
-    await runTransaction(db, async transaction => {
-      const auctionRef = doc(db, "subastas", auctionId);
-      const snapshot = await transaction.get(auctionRef);
-
-      if (!snapshot.exists()) {
-        throw new Error("La subasta ya no existe.");
-      }
-
-      const a = snapshot.data();
-      const now = Date.now();
-
-      if (
-        a.estado !== "en_vivo" ||
-        !startTime(a) ||
-        now < startTime(a) ||
-        now >= endTime(a)
-      ) {
-        throw new Error("La subasta ya no está activa.");
-      }
-
-      const minimum =
-        Number(a.pujaActual ?? a.precioInicial ?? 0) +
-        Number(a.incrementoMinimo || 500);
-
-      if (amount < minimum) {
-        throw new Error(`La puja mínima es ${money(minimum)}.`);
-      }
-
-      const name =
-        currentProfile.nombre ||
-        currentUser.displayName ||
-        "Usuario";
-
-      const bidRef = doc(
-        collection(db, "subastas", auctionId, "pujas")
+    if (!currentUser) {
+      sessionStorage.setItem(
+        "subastandoFierrosDestino",
+        location.href
       );
 
-      transaction.update(auctionRef, {
-        pujaActual: amount,
-        totalPujas: Number(a.totalPujas || 0) + 1,
-        ultimaPujaUid: currentUser.uid,
-        ultimaPujaNombre: name,
-        ultimaPujaFecha: serverTimestamp()
-      });
+      location.href =
+        "login.html";
 
-      transaction.set(bidRef, {
-        monto: amount,
-        uid: currentUser.uid,
-        nombre: name,
-        fecha: serverTimestamp()
-      });
-    });
+      return;
+    }
 
-    showMessage("¡Tu puja se registró correctamente!");
-  } catch (error) {
-    console.error("Error registrando puja:", error);
-    showMessage(error.message || "No se pudo registrar la puja.");
-  } finally {
-    updateBidButton();
+    if (!canBid()) {
+      showMessage(
+        "La subasta no está activa " +
+        "o tu membresía no está autorizada."
+      );
+      return;
+    }
+
+    const auctionId =
+      activeAuction.id;
+
+    const amount =
+      Number(
+        $("bidInput")?.value
+      );
+
+    if (
+      !Number.isSafeInteger(amount) ||
+      amount <= 0
+    ) {
+      showMessage(
+        "Ingresa una cantidad válida."
+      );
+      return;
+    }
+
+    const button =
+      $("bidButton");
+
+    button.disabled = true;
+
+    button.textContent =
+      "REGISTRANDO...";
+
+    try {
+      await runTransaction(
+        db,
+        async transaction => {
+
+          const auctionRef = doc(
+            db,
+            "subastas",
+            auctionId
+          );
+
+          const snapshot =
+            await transaction.get(
+              auctionRef
+            );
+
+          if (!snapshot.exists()) {
+            throw new Error(
+              "La subasta ya no existe."
+            );
+          }
+
+          const a =
+            snapshot.data();
+
+          const now =
+            Date.now();
+
+          /*
+            Permite pujar si la subasta
+            está programada y ya llegó
+            su hora, o si está en_vivo.
+          */
+
+          if (
+            ![
+              "en_vivo",
+              "programada"
+            ].includes(a.estado) ||
+            !startTime(a) ||
+            now < startTime(a) ||
+            now >= endTime(a)
+          ) {
+            throw new Error(
+              "La subasta ya no está activa."
+            );
+          }
+
+          const minimum =
+            Number(
+              a.pujaActual ??
+              a.precioInicial ??
+              0
+            ) +
+            Number(
+              a.incrementoMinimo ||
+              500
+            );
+
+          if (amount < minimum) {
+            throw new Error(
+              `La puja mínima es ${money(minimum)}.`
+            );
+          }
+
+          const name =
+            currentProfile?.nombre ||
+            currentUser.displayName ||
+            "Usuario";
+
+          const bidRef = doc(
+            collection(
+              db,
+              "subastas",
+              auctionId,
+              "pujas"
+            )
+          );
+
+          transaction.update(
+            auctionRef,
+            {
+              pujaActual: amount,
+
+              totalPujas:
+                Number(
+                  a.totalPujas || 0
+                ) + 1,
+
+              ultimaPujaUid:
+                currentUser.uid,
+
+              ultimaPujaNombre:
+                name,
+
+              ultimaPujaFecha:
+                serverTimestamp()
+            }
+          );
+
+          transaction.set(
+            bidRef,
+            {
+              monto: amount,
+              uid: currentUser.uid,
+              nombre: name,
+              fecha: serverTimestamp()
+            }
+          );
+        }
+      );
+
+      showMessage(
+        "¡Tu puja se registró correctamente!"
+      );
+
+    } catch (error) {
+      console.error(
+        "Error registrando puja:",
+        error
+      );
+
+      showMessage(
+        error.message ||
+        "No se pudo registrar la puja."
+      );
+
+    } finally {
+      updateBidButton();
+    }
   }
-});
+);
 
 /* =====================================
    PRÓXIMAS SUBASTAS
@@ -821,21 +1279,30 @@ $("bidButton")?.addEventListener("click", async () => {
 
 function getFilteredUpcoming() {
   return lots
-    .filter(a =>
-      isUpcoming(a) &&
-      (
-        selectedCategory === "todos" ||
-        categoryOf(a.categoria) === selectedCategory
-      )
+    .filter(
+      a =>
+        isUpcoming(a) &&
+        (
+          selectedCategory === "todos" ||
+          categoryOf(a.categoria) ===
+            selectedCategory
+        )
     )
-    .sort((a, b) => startTime(a) - startTime(b));
+    .sort(
+      (a, b) =>
+        startTime(a) -
+        startTime(b)
+    );
 }
 
 function renderAuctionList() {
-  const container = $("auctionList");
+  const container =
+    $("auctionList");
+
   if (!container) return;
 
-  const filtered = getFilteredUpcoming();
+  const filtered =
+    getFilteredUpcoming();
 
   setText(
     "auctionCategoryLabel",
@@ -847,60 +1314,108 @@ function renderAuctionList() {
   container.replaceChildren();
 
   if (!filtered.length) {
-    const empty = document.createElement("div");
-    empty.className = "auction-empty-state";
+    const empty =
+      document.createElement("div");
+
+    empty.className =
+      "auction-empty-state";
+
     empty.innerHTML = `
       <span>🔨</span>
       <strong>AÚN NO HAY SUBASTAS EN ESTA CATEGORÍA</strong>
       <p>Muy pronto aparecerán nuevas oportunidades.</p>
     `;
+
     container.append(empty);
     return;
   }
 
   filtered.forEach(a => {
-    const card = document.createElement("article");
-    card.className = "auction-card";
-    card.tabIndex = 0;
-    card.setAttribute("role", "link");
-    card.dataset.auctionId = a.id;
+    const card =
+      document.createElement("article");
 
-    const name = `${a.marca || ""} ${a.modelo || ""}`.trim();
+    card.className =
+      "auction-card";
+
+    card.tabIndex = 0;
+
+    card.setAttribute(
+      "role",
+      "link"
+    );
+
+    card.dataset.auctionId =
+      a.id;
+
+    const name =
+      `${a.marca || ""} ${a.modelo || ""}`
+        .trim();
 
     const candidate =
-      (Array.isArray(a.fotos) && a.fotos[0]) ||
+      (
+        Array.isArray(a.fotos) &&
+        a.fotos[0]
+      ) ||
       a.fotoPortada ||
       FALLBACK_IMAGE;
 
     const cover =
-      typeof candidate === "string" && candidate.startsWith("https://")
+      typeof candidate === "string" &&
+      candidate.startsWith("https://")
         ? candidate
         : FALLBACK_IMAGE;
 
     card.innerHTML = `
       <div class="auction-card-image">
-        <span class="upcoming-badge">PRÓXIMAMENTE</span>
-        <img src="${escapeHTML(cover)}"
-             alt="${escapeHTML(name)}" loading="lazy">
+        <span class="upcoming-badge">
+          PRÓXIMAMENTE
+        </span>
+
+        <img
+          src="${escapeHTML(cover)}"
+          alt="${escapeHTML(name)}"
+          loading="lazy"
+        >
       </div>
+
       <div class="auction-card-body">
         <h3>${escapeHTML(name)}</h3>
+
         <div class="sub">
-          ${escapeHTML([a.anio, a.version].filter(Boolean).join(" | "))}
+          ${escapeHTML(
+            [a.anio, a.version]
+              .filter(Boolean)
+              .join(" | ")
+          )}
         </div>
+
         <div class="row">
           <span>Inicia en:</span>
-          <span>🕐 <strong class="auction-card-countdown">
-            ${formatCountdown(secondsUntilStart(a))}
-          </strong></span>
+
+          <span>
+            🕐
+            <strong class="auction-card-countdown">
+              ${formatCountdown(
+                secondsUntilStart(a)
+              )}
+            </strong>
+          </span>
         </div>
+
         <div class="row">
           <span>Fecha:</span>
-          <span>${escapeHTML(formatDate(a.fechaInicio))}</span>
+          <span>
+            ${escapeHTML(
+              formatDate(a.fechaInicio)
+            )}
+          </span>
         </div>
+
         <div class="row">
           <span>Puja inicial:</span>
-          <span class="price">${money(a.precioInicial)}</span>
+          <span class="price">
+            ${money(a.precioInicial)}
+          </span>
         </div>
       </div>
     `;
@@ -910,13 +1425,23 @@ function renderAuctionList() {
         `vehiculo.html?id=${encodeURIComponent(a.id)}`;
     };
 
-    card.addEventListener("click", openAuction);
-    card.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        openAuction();
+    card.addEventListener(
+      "click",
+      openAuction
+    );
+
+    card.addEventListener(
+      "keydown",
+      event => {
+        if (
+          event.key === "Enter" ||
+          event.key === " "
+        ) {
+          event.preventDefault();
+          openAuction();
+        }
       }
-    });
+    );
 
     container.append(card);
   });
@@ -925,24 +1450,42 @@ function renderAuctionList() {
 function updateUpcomingClocks() {
   let needsRender = false;
 
-  document.querySelectorAll("#auctionList .auction-card")
+  document
+    .querySelectorAll(
+      "#auctionList .auction-card"
+    )
     .forEach(card => {
-      const a = lots.find(item =>
-        item.id === card.dataset.auctionId
+
+      const a = lots.find(
+        item =>
+          item.id ===
+          card.dataset.auctionId
       );
 
-      if (!a || !isUpcoming(a)) {
+      if (
+        !a ||
+        !isUpcoming(a)
+      ) {
         needsRender = true;
         return;
       }
 
-      const clock = card.querySelector(".auction-card-countdown");
+      const clock =
+        card.querySelector(
+          ".auction-card-countdown"
+        );
+
       if (clock) {
-        clock.textContent = formatCountdown(secondsUntilStart(a));
+        clock.textContent =
+          formatCountdown(
+            secondsUntilStart(a)
+          );
       }
     });
 
-  if (needsRender) renderAuctionList();
+  if (needsRender) {
+    renderAuctionList();
+  }
 }
 
 /* =====================================
@@ -950,22 +1493,33 @@ function updateUpcomingClocks() {
 ===================================== */
 
 onSnapshot(
-  collection(db, "subastas"),
+  collection(
+    db,
+    "subastas"
+  ),
+
   snapshot => {
-    lots = snapshot.docs.map(item => ({
-      ...item.data(),
-      id: item.id
-    }));
+    lots = snapshot.docs.map(
+      item => ({
+        ...item.data(),
+        id: item.id
+      })
+    );
 
     refreshMainAuction();
     renderAuctionList();
     renderMyWonAuctions();
-    activateScheduledAuctions();
   },
+
   error => {
-    console.error("No se pudieron cargar subastas:", error);
+    console.error(
+      "No se pudieron cargar subastas:",
+      error
+    );
+
     showMessage(
-      "No se pudieron cargar las subastas. Revisa los permisos de Firebase."
+      "No se pudieron cargar las subastas. " +
+      "Revisa los permisos de Firebase."
     );
   }
 );
@@ -977,7 +1531,6 @@ onSnapshot(
 setInterval(() => {
   refreshMainAuction();
   updateUpcomingClocks();
-  activateScheduledAuctions();
 }, 1000);
 
 refreshMainAuction();
@@ -986,57 +1539,115 @@ refreshMainAuction();
    FILTROS
 ===================================== */
 
-document.querySelectorAll(".category-card").forEach(button => {
-  button.addEventListener("click", () => {
-    selectedCategory = button.dataset.category || "todos";
+document
+  .querySelectorAll(".category-card")
+  .forEach(button => {
 
-    document.querySelectorAll(".category-card").forEach(item => {
-      item.classList.toggle("active", item === button);
-    });
+    button.addEventListener(
+      "click",
+      () => {
 
-    renderAuctionList();
-    $("proximas")?.scrollIntoView({ behavior: "smooth" });
-  });
-});
+        selectedCategory =
+          button.dataset.category ||
+          "todos";
 
-$("showAllAuctions")?.addEventListener("click", () => {
-  selectedCategory = "todos";
+        document
+          .querySelectorAll(
+            ".category-card"
+          )
+          .forEach(item => {
 
-  document.querySelectorAll(".category-card").forEach(button => {
-    button.classList.toggle(
-      "active",
-      button.dataset.category === "todos"
+            item.classList.toggle(
+              "active",
+              item === button
+            );
+          });
+
+        renderAuctionList();
+
+        $("proximas")?.scrollIntoView({
+          behavior: "smooth"
+        });
+      }
     );
   });
 
-  renderAuctionList();
-  $("proximas")?.scrollIntoView({ behavior: "smooth" });
-});
+$("showAllAuctions")?.addEventListener(
+  "click",
+  () => {
+
+    selectedCategory =
+      "todos";
+
+    document
+      .querySelectorAll(
+        ".category-card"
+      )
+      .forEach(button => {
+
+        button.classList.toggle(
+          "active",
+          button.dataset.category ===
+            "todos"
+        );
+      });
+
+    renderAuctionList();
+
+    $("proximas")?.scrollIntoView({
+      behavior: "smooth"
+    });
+  }
+);
 
 /* =====================================
    MENÚ MÓVIL
 ===================================== */
 
-const mobileMenu = $("mobileMenu");
+const mobileMenu =
+  $("mobileMenu");
 
-$("mobileMenuButton")?.addEventListener("click", () => {
-  if (mobileMenu) mobileMenu.hidden = !mobileMenu.hidden;
-});
+$("mobileMenuButton")?.addEventListener(
+  "click",
+  () => {
+    if (mobileMenu) {
+      mobileMenu.hidden =
+        !mobileMenu.hidden;
+    }
+  }
+);
 
-mobileMenu?.querySelectorAll("a").forEach(link => {
-  link.addEventListener("click", () => {
-    mobileMenu.hidden = true;
+mobileMenu
+  ?.querySelectorAll("a")
+  .forEach(link => {
+
+    link.addEventListener(
+      "click",
+      () => {
+        mobileMenu.hidden = true;
+      }
+    );
   });
-});
 
 /* =====================================
    BOTONES DE DESPLAZAMIENTO
 ===================================== */
 
-document.querySelectorAll(".js-scroll-auctions").forEach(button => {
-  button.addEventListener("click", () => {
-    $("subastas")?.scrollIntoView({ behavior: "smooth" });
+document
+  .querySelectorAll(
+    ".js-scroll-auctions"
+  )
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        $("subastas")?.scrollIntoView({
+          behavior: "smooth"
+        });
+      }
+    );
   });
-});
 
 /* FIN DE APP.JS */
