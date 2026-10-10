@@ -98,6 +98,81 @@ const PREVIEW_MINUTES = 5;
 const DEFAULT_ROUND_SECONDS = 120;
 
 /* =====================================
+   SUBASTAS GANADAS POR EL USUARIO
+   Solo muestra premios del UID autenticado.
+===================================== */
+
+function isAwardedToMe(a) {
+  if (!currentUser || !a) return false;
+  const winnerUid = a.ganadorUid ?? a.uidGanador ?? a.ganador?.uid;
+  const state = String(a.estado || "").toLowerCase();
+  const result = String(a.resultado || "").toLowerCase();
+  return winnerUid === currentUser.uid &&
+    (state === "finalizada" || state === "adjudicada" ||
+     result === "adjudicada");
+}
+
+function renderMyWonAuctions() {
+  let section = document.getElementById("misSubastasGanadasSF");
+  if (!section) {
+    section = document.createElement("section");
+    section.id = "misSubastasGanadasSF";
+    section.style.cssText = "max-width:1250px;margin:28px auto;padding:24px;background:#111216;border:1px solid #414148;border-radius:18px;color:#fff;box-sizing:border-box";
+    const main = document.querySelector("main");
+    if (main) main.prepend(section);
+    else document.body.prepend(section);
+  }
+
+  const won = lots.filter(isAwardedToMe);
+  section.hidden = !won.length;
+  if (!won.length) {
+    section.replaceChildren();
+    return;
+  }
+
+  section.replaceChildren();
+  const title = document.createElement("h2");
+  title.textContent = "🏆 ¡FELICIDADES! GANASTE UNA SUBASTA" + (won.length > 1 ? "S" : "");
+  title.style.cssText = "font-size:clamp(20px,3vw,30px);margin:0 0 8px;color:#fff";
+  const description = document.createElement("p");
+  description.textContent = "Estas unidades fueron adjudicadas a tu cuenta. Consulta el estado de tu pago y entrega.";
+  description.style.cssText = "color:#c3c3c8;margin:0 0 18px";
+  section.append(title, description);
+
+  won.forEach(a => {
+    const card = document.createElement("article");
+    card.style.cssText = "display:flex;flex-wrap:wrap;gap:18px;align-items:center;padding:18px;margin-top:14px;border:1px solid #36363d;border-radius:14px;background:#1a1b20";
+    const photo = (Array.isArray(a.fotos) && a.fotos.find(u => typeof u === "string" && u.startsWith("https://"))) || a.fotoPortada;
+    if (typeof photo === "string" && photo.startsWith("https://")) {
+      const img = document.createElement("img");
+      img.src = photo;
+      img.alt = "Vehículo adjudicado";
+      img.loading = "lazy";
+      img.style.cssText = "width:190px;max-width:100%;height:125px;object-fit:cover;border-radius:10px";
+      card.append(img);
+    }
+    const content = document.createElement("div");
+    content.style.cssText = "flex:1;min-width:220px";
+    const name = document.createElement("h3");
+    name.textContent = [a.marca,a.modelo,a.anio].filter(Boolean).join(" ") || a.id;
+    name.style.cssText = "margin:0 0 8px;font-size:21px";
+    const price = document.createElement("div");
+    price.textContent = "🏆 ADJUDICADA · " + money(a.precioFinal ?? a.pujaActual ?? a.precioInicial);
+    price.style.cssText = "font-size:22px;font-weight:800;color:#ffc857;margin-bottom:9px";
+    const info = document.createElement("p");
+    info.style.cssText = "margin:0 0 10px;color:#d2d2d6;line-height:1.7";
+    info.textContent = `Folio: ${a.id} · Pago: ${a.estadoPago || "pendiente"} · Entrega: ${a.estadoEntrega || "pendiente"}`;
+    const link = document.createElement("a");
+    link.href = `vehiculo.html?id=${encodeURIComponent(a.id)}`;
+    link.textContent = "VER MI VEHÍCULO →";
+    link.style.cssText = "color:#fff;background:#e51d2b;border-radius:8px;padding:10px 15px;text-decoration:none;font-weight:800;display:inline-block";
+    content.append(name,price,info,link);
+    card.append(content);
+    section.append(card);
+  });
+}
+
+/* =====================================
    AUTENTICACIÓN
 ===================================== */
 
@@ -117,6 +192,7 @@ onAuthStateChanged(auth, async user => {
 
   authReady = true;
   updateHeaderSession();
+  renderMyWonAuctions();
   updateBidButton();
   activateScheduledAuctions();
 });
@@ -883,6 +959,7 @@ onSnapshot(
 
     refreshMainAuction();
     renderAuctionList();
+    renderMyWonAuctions();
     activateScheduledAuctions();
   },
   error => {
